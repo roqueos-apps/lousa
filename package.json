@@ -1,6 +1,6 @@
 {
   "name": "@roqueos-apps/lousa",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "O Quadro Branco do RoqueOS: formas, traço à mão livre, texto, notas adesivas e imagens num quadro infinito, vários quadros na conta, exportar em PNG, SVG e PDF, e IA sobre o que está escrito, nos dez idiomas do sistema.",
   "license": "MIT",

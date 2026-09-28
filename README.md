@@ -3,8 +3,8 @@
 O Quadro Branco do [RoqueOS](https://roqueos.com.br): um quadro infinito com retângulo, elipse,
 losango, linha, seta, lápis e caneta à mão livre, texto, notas adesivas e imagens; selecionar,
 mover, redimensionar e girar; desfazer e refazer; vários quadros na conta, com o último aberto
-de volta; exportar em PNG, SVG e PDF; guardar o quadro como `.rosboard` nos Arquivos; e IA
-sobre o que está escrito (resumir, agrupar em temas, tirar as ações). Nos dez idiomas do
+de volta; exportar em PNG, SVG e PDF; guardar o quadro como `.rosboard` nos Arquivos, e abrir
+o `.rosboard` de volta com um duplo clique no Finder; e IA sobre o que está escrito (resumir, agrupar em temas, tirar as ações). Nos dez idiomas do
 RoqueOS. O repositório se chama `lousa`; na tela, o app é o Quadro Branco.
 
 Use de graça em [roqueos.com.br](https://roqueos.com.br), no computador, no celular e na TV.
@@ -76,6 +76,11 @@ Só pelo `sistema` do SDK, e cada capacidade opcional está no `app.json`:
   ações da Lousa somadas ao catálogo: agrupar em temas e tirar as ações. A Lousa não vê agente
   nem chave.
 - `arquivos`: guardar o quadro como `.rosboard` em Documentos.
+- `abertura`: o `.rosboard` que o Finder manda abrir, no duplo clique ou no "abrir com". O
+  `app.json` declara o tipo em `abre` (`application/vnd.roqueos.rosboard+json`, o mesmo que o
+  salvar grava), e o RoqueOS reconhece o arquivo pela extensão, também o guardado antes como
+  `application/json`. Com conta, o arquivo vira um quadro novo da conta, e as imagens embutidas
+  viram anexo; na memória, entra no quadro aberto, e desfazer volta ao desenho de antes.
 - `idioma`, `desempenho` (o perfil leve tira a malha e o desfoque), `avisar`, `metricas` (o
   evento `save`, o mesmo de antes).
 
@@ -137,7 +142,8 @@ são da LEVELHARD e não fazem parte da licença.
 The Whiteboard app of [RoqueOS](https://roqueos.com.br): an infinite board with shapes, lines,
 arrows, freehand pencil and pen, text, sticky notes and images; select, move, resize and
 rotate; undo and redo; several boards in the user's account; export as PNG, SVG and PDF; save
-the board as `.rosboard` to Files; and AI over what is written (summarize, group into themes,
+the board as `.rosboard` to Files, and open a `.rosboard` back with a double click in Finder;
+and AI over what is written (summarize, group into themes,
 extract action items). In all ten RoqueOS languages. The repository is called `lousa`; the app
 is shown as Whiteboard.
 
@@ -148,7 +154,9 @@ talks to RoqueOS only through the `sistema` of
 per board, read one at a time, plus the board index, in the same places as before), `anexos`
 (pasted images kept by a durable id that never becomes a URL), `ia` (the system's read-only AI
 panel with two whiteboard actions added; no agent or key reaches the app), `arquivos` (save as
-`.rosboard` to Documents), plus language, light profile, notices and metrics. Guests keep the
+`.rosboard` to Documents), `abertura` (the `.rosboard` Finder hands over on a double click or
+"open with": a new board in the account, embedded images become attachments), plus language,
+light profile, notices and metrics. Guests keep the
 board in memory with images embedded.
 
 Run `yarn install --ignore-scripts`, then `yarn dev` (a fake RoqueOS window with a local

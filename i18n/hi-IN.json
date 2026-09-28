@@ -59,5 +59,8 @@
   "comumMenu": "मेनू",
   "iaTitulo": "एआई",
   "erroGenerico": "एक अप्रत्याशित त्रुटि हुई",
-  "comumRetry": "पुनः प्रयास करें"
+  "comumRetry": "पुनः प्रयास करें",
+  "notifyFileOpenedTitle": "बोर्ड खुल गया",
+  "notifyFileErrorTitle": "फ़ाइल नहीं खुल सकी",
+  "notifyFileNotBoardMsg": "यह फ़ाइल व्हाइटबोर्ड का बोर्ड नहीं है, या खराब हो गई है।"
 }

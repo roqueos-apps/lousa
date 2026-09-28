@@ -59,5 +59,8 @@
   "comumMenu": "メニュー",
   "iaTitulo": "AI",
   "erroGenerico": "予期しないエラーが発生しました",
-  "comumRetry": "再試行"
+  "comumRetry": "再試行",
+  "notifyFileOpenedTitle": "ボードを開きました",
+  "notifyFileErrorTitle": "ファイルを開けませんでした",
+  "notifyFileNotBoardMsg": "このファイルはホワイトボードのボードではないか、破損しています。"
 }

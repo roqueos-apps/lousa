@@ -35,8 +35,9 @@
     "minLargura": 400,
     "minAltura": 300
   },
-  "capacidades": ["colecoes", "ia", "arquivos", "anexos"],
+  "capacidades": ["colecoes", "ia", "arquivos", "anexos", "abertura"],
   "colecoes": ["quadros", "indice"],
+  "abre": ["application/vnd.roqueos.rosboard+json"],
   "autor": "Roque Ribeiro",
   "licenca": "MIT"
 }

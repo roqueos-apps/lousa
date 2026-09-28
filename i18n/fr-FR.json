@@ -59,5 +59,8 @@
   "comumMenu": "Menu",
   "iaTitulo": "IA",
   "erroGenerico": "Une erreur inattendue s'est produite",
-  "comumRetry": "Réessayer"
+  "comumRetry": "Réessayer",
+  "notifyFileOpenedTitle": "Tableau ouvert",
+  "notifyFileErrorTitle": "Impossible d'ouvrir le fichier",
+  "notifyFileNotBoardMsg": "Ce fichier n'est pas un tableau du Tableau Blanc, ou il est endommagé."
 }

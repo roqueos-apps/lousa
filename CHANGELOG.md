@@ -3,6 +3,23 @@
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e o projeto
 usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.1.3] - 2026-09-28
+
+### Adicionado
+
+- O `.rosboard` abre de volta no Quadro Branco. Ele guardava o arquivo nos Documentos e não
+  abria nenhum, nem dentro do RoqueOS, antes de sair: o duplo clique no Finder dizia que o
+  arquivo não era suportado. Agora o duplo clique e o "abrir com" entregam o arquivo pela
+  capacidade `abertura` do `app-sdk`. Com conta, ele vira um quadro novo da conta, com o nome de
+  dentro do arquivo (ou o do arquivo), e as imagens embutidas viram anexo; no quadro da memória,
+  entra no aberto, e desfazer volta ao desenho de antes. O que não é quadro avisa e não mexe em
+  nada.
+
+### Mudado
+
+- O `.rosboard` é gravado com o tipo `application/vnd.roqueos.rosboard+json`, o que o
+  `app.json` declara em `abre`. O formato de dentro é o mesmo (`version: 2`).
+
 ## [0.1.2] - 2026-09-28
 
 ### Mudado

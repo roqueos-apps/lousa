@@ -59,5 +59,8 @@
   "comumMenu": "القائمة",
   "iaTitulo": "الذكاء الاصطناعي",
   "erroGenerico": "حدث خطأ غير متوقع",
-  "comumRetry": "إعادة المحاولة"
+  "comumRetry": "إعادة المحاولة",
+  "notifyFileOpenedTitle": "فُتحت اللوحة",
+  "notifyFileErrorTitle": "تعذّر فتح الملف",
+  "notifyFileNotBoardMsg": "هذا الملف ليس لوحة من السبورة، أو أنه تالف."
 }

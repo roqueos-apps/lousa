@@ -59,5 +59,8 @@
   "comumMenu": "Menu",
   "iaTitulo": "AI",
   "erroGenerico": "An unexpected error occurred",
-  "comumRetry": "Retry"
+  "comumRetry": "Retry",
+  "notifyFileOpenedTitle": "Board opened",
+  "notifyFileErrorTitle": "Couldn't open the file",
+  "notifyFileNotBoardMsg": "This file isn't a Whiteboard board, or it's damaged."
 }

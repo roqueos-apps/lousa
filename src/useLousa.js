@@ -66,6 +66,12 @@ const TIPO_DO_AVISO = Object.freeze({
 })
 
 /** Os bytes de uma data URL, sem esperar nada (a imagem embutida do convidado). */
+/**
+ * O tipo do .rosboard. O RoqueOS reconhece o arquivo pela extensão e o entrega a quem declara este
+ * tipo em `abre` no app.json: o Storage pode ter guardado o de antes como `application/json`.
+ */
+export const TIPO_DO_ROSBOARD = 'application/vnd.roqueos.rosboard+json'
+
 export function blobDaDataUrl(dataUrl) {
   const [cabeca = '', corpo = ''] = String(dataUrl).split(',', 2)
   const tipo = /^data:([^;,]+)/.exec(cabeca)?.[1] || 'application/octet-stream'
@@ -111,6 +117,17 @@ export async function reduzirNoCanvas(arquivo, dims, { criarUrl, soltarUrl, limi
 }
 
 /** Um arquivo lido como data URL (a imagem do convidado, e a exportação). */
+/** O texto de um Blob. O `Blob.text()` do navegador, e o FileReader onde ele não existe. */
+export function lerComoTexto(blob) {
+  if (typeof blob?.text === 'function') return blob.text()
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader()
+    leitor.onload = () => resolve(String(leitor.result ?? ''))
+    leitor.onerror = () => reject(new Error('read failed'))
+    leitor.readAsText(blob)
+  })
+}
+
 export function lerComoDataUrl(arquivo) {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader()
@@ -180,6 +197,9 @@ export function useLousa({
 
   // O desenho de quem estava sem conta e entrou com a Lousa aberta, até virar quadro da conta.
   let desenhoDoConvidado = null
+
+  // O .rosboard que o Finder mandou abrir ("abrir com" e o duplo clique), até os quadros abrirem.
+  let arquivoPedido = sistema.abertura?.atual?.().arquivo ?? null
 
   // History
   const history = createBoardHistory()
@@ -690,37 +710,42 @@ export function useLousa({
     loading.value = true
     error.value = null
     try {
-      if (soNaMemoria()) {
-        // E2E: a semente do harness (QA visual sem token do banco). Convidado: um quadro em
-        // memória, sem salvamento automático.
-        const semente = emModoE2E() ? estadoE2E('whiteboard') : null
-        currentBoardId.value = Array.isArray(semente) ? 'e2e' : 'local'
-        boards.value = Array.isArray(semente) ? [{ id: 'e2e', name: 'E2E' }] : []
-        applyBoardData(
-          Array.isArray(semente) ? { name: 'E2E', elements: semente } : { elements: [] },
-        )
-        return
-      }
-      const index = await quadros.lerIndice()
-      boards.value = index.boards
-      // O último aberto; se ele sumiu, ou se não há último (o apagado cuja troca falhou), o
-      // primeiro da lista. Quadro novo só quando a lista está vazia.
-      let target = index.lastBoardId
-      if (!index.boards.some((b) => b.id === target)) target = index.boards[0]?.id || null
-      if (!target) {
-        await createBoard(t('untitled'), { silent: true })
-      } else {
-        currentBoardId.value = target
-        const data = await quadros.lerQuadro(target)
-        applyBoardData(data || { name: t('untitled'), elements: [] })
-      }
-      if (desenhoDoConvidado) await adotarDesenhoDoConvidado()
+      await abrirOsQuadros()
     } catch (e) {
       console.error('[lousa] abrir os quadros', e?.codigo ?? e)
       error.value = 'load'
     } finally {
       loading.value = false
     }
+    // O arquivo do Finder entra depois dos quadros: com conta ele vira um quadro novo, e criar
+    // antes de ler o índice brigaria com a lista que ainda vai chegar.
+    if (!error.value) await abrirPedido()
+  }
+
+  async function abrirOsQuadros() {
+    if (soNaMemoria()) {
+      // E2E: a semente do harness (QA visual sem token do banco). Convidado: um quadro em
+      // memória, sem salvamento automático.
+      const semente = emModoE2E() ? estadoE2E('whiteboard') : null
+      currentBoardId.value = Array.isArray(semente) ? 'e2e' : 'local'
+      boards.value = Array.isArray(semente) ? [{ id: 'e2e', name: 'E2E' }] : []
+      applyBoardData(Array.isArray(semente) ? { name: 'E2E', elements: semente } : { elements: [] })
+      return
+    }
+    const index = await quadros.lerIndice()
+    boards.value = index.boards
+    // O último aberto; se ele sumiu, ou se não há último (o apagado cuja troca falhou), o
+    // primeiro da lista. Quadro novo só quando a lista está vazia.
+    let target = index.lastBoardId
+    if (!index.boards.some((b) => b.id === target)) target = index.boards[0]?.id || null
+    if (!target) {
+      await createBoard(t('untitled'), { silent: true })
+    } else {
+      currentBoardId.value = target
+      const data = await quadros.lerQuadro(target)
+      applyBoardData(data || { name: t('untitled'), elements: [] })
+    }
+    if (desenhoDoConvidado) await adotarDesenhoDoConvidado()
   }
 
   async function persistIndex() {
@@ -874,12 +899,12 @@ export function useLousa({
         elements: limparElementos(elementos),
       })
       if (soNaMemoria()) {
-        downloadBlob(new Blob([conteudo], { type: 'application/json' }), nome)
+        downloadBlob(new Blob([conteudo], { type: TIPO_DO_ROSBOARD }), nome)
       } else {
         await sistema.arquivos.salvar({
           nome,
           conteudo,
-          tipo: 'application/json',
+          tipo: TIPO_DO_ROSBOARD,
           pasta: 'Documentos',
         })
       }
@@ -917,7 +942,7 @@ export function useLousa({
     }
   }
 
-  async function guardarNaConta(desenho) {
+  async function guardarNaConta(desenho, { nome = t('untitled'), aviso = true } = {}) {
     const elementos = await Promise.all(
       desenho.map(async (el) => {
         if (el.type !== 'image' || el.anexo || !/^data:/.test(el.src || '')) return el
@@ -933,14 +958,75 @@ export function useLousa({
         }
       }),
     )
-    await createBoard(t('untitled'), { silent: true })
+    await createBoard(nome, { silent: true })
     elements.value = elementos
     history.reset()
     history.push(elements.value)
     syncHistory()
     await flushSave()
-    notify(t('notifyGuestSavedTitle'), t('notifyGuestSavedMsg'))
+    if (aviso) notify(t('notifyGuestSavedTitle'), t('notifyGuestSavedMsg'))
   }
+
+  // --- O .rosboard pelo Finder ------------------------------------------------------------------
+  // O Quadro Branco guardava .rosboard e não abria nenhum (nem dentro do RoqueOS, antes de sair):
+  // o duplo clique no Finder dava "arquivo não suportado". O Finder agora entrega o arquivo pela
+  // abertura. Com conta, ele vira um quadro novo da conta, e as imagens embutidas viram anexo,
+  // como o desenho do convidado; sem conta, entra no quadro da memória, e desfazer volta ao
+  // desenho de antes.
+  async function abrirArquivo(arquivo) {
+    let texto
+    try {
+      texto = await lerComoTexto(await sistema.arquivos.ler(arquivo.ref))
+    } catch (e) {
+      // A rede, ou o sistema que não lê (sem conta): o quadro aberto fica como estava.
+      console.error('[lousa] ler o arquivo', e?.codigo ?? e)
+      notify(t('notifyFileErrorTitle'), t('notifyOpenErrorMsg'), 'error')
+      return false
+    }
+    let dados = null
+    try {
+      dados = JSON.parse(texto)
+    } catch {
+      dados = null
+    }
+    if (!dados || typeof dados !== 'object' || !Array.isArray(dados.elements)) {
+      notify(t('notifyFileErrorTitle'), t('notifyFileNotBoardMsg'), 'error')
+      return false
+    }
+    const doArquivo = String(arquivo.nome ?? '').replace(/\.rosboard$/i, '')
+    const nome = (typeof dados.name === 'string' && dados.name.trim()) || doArquivo || t('untitled')
+    const elementos = dados.elements.map(migrateElement).filter(Boolean)
+    if (soNaMemoria()) {
+      elements.value = elementos
+      selectedIds.value = []
+      boardName.value = nome
+      commit()
+    } else {
+      try {
+        await guardarNaConta(elementos, { nome, aviso: false })
+      } catch (e) {
+        console.error('[lousa] guardar o arquivo aberto', e?.codigo ?? e)
+        notify(t('notifyFileErrorTitle'), t('notifyOpenErrorMsg'), 'error')
+        return false
+      }
+    }
+    notify(t('notifyFileOpenedTitle'), nome)
+    return true
+  }
+
+  async function abrirPedido() {
+    const arquivo = arquivoPedido
+    arquivoPedido = null
+    if (arquivo?.ref) await abrirArquivo(arquivo)
+  }
+
+  // Com a Lousa já aberta, o Finder manda o arquivo novo pela mesma abertura.
+  const pararAbertura =
+    sistema.abertura?.aoMudar?.((pedido) => {
+      if (!pedido?.arquivo) return
+      arquivoPedido = pedido.arquivo
+      if (!loading.value && !error.value) abrirPedido()
+    }) ?? (() => {})
 
   // --- Lifecycle ---------------------------------------------------------------
   // A conta trocou com a Lousa aberta: o que esperava para gravar era da conta anterior e não
@@ -963,6 +1049,7 @@ export function useLousa({
   function cleanup() {
     flushSave()
     pararConta()
+    pararAbertura()
     for (const url of Object.values(urlsDosAnexos)) if (url) soltarUrl(url)
   }
   onUnmounted(cleanup)

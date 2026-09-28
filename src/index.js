@@ -9,6 +9,7 @@
 //   ia         o painel de IA do sistema, sobre o que está escrito no quadro
 //   arquivos   guardar o quadro como .rosboard em Documentos
 //   anexos     as imagens do quadro, por um id que abre em qualquer aparelho
+//   abertura   o .rosboard que o Finder manda abrir (o "abrir com" e o duplo clique)
 //
 // As capacidades são as mesmas do `app.json`: o teste `app.spec.js` confere que as duas
 // listas batem, porque o build do RoqueOS não deixa este arquivo importar o JSON.
@@ -18,7 +19,7 @@ import { definirApp } from '@roqueos-apps/app-sdk'
 import Lousa from './Lousa.vue'
 import { carregarTextos } from './textos.js'
 
-export const CAPACIDADES = Object.freeze(['colecoes', 'ia', 'arquivos', 'anexos'])
+export const CAPACIDADES = Object.freeze(['colecoes', 'ia', 'arquivos', 'anexos', 'abertura'])
 
 export default definirApp({
   id: 'whiteboard',

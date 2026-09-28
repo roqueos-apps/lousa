@@ -59,5 +59,8 @@
   "comumMenu": "Menu",
   "iaTitulo": "IA",
   "erroGenerico": "Ocorreu um erro inesperado",
-  "comumRetry": "Tentar novamente"
+  "comumRetry": "Tentar novamente",
+  "notifyFileOpenedTitle": "Quadro aberto",
+  "notifyFileErrorTitle": "Não foi possível abrir o arquivo",
+  "notifyFileNotBoardMsg": "Este arquivo não é um quadro do Quadro Branco, ou está danificado."
 }

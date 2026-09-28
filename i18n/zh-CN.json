@@ -59,5 +59,8 @@
   "comumMenu": "菜单",
   "iaTitulo": "AI",
   "erroGenerico": "发生意外错误",
-  "comumRetry": "重试"
+  "comumRetry": "重试",
+  "notifyFileOpenedTitle": "已打开白板",
+  "notifyFileErrorTitle": "无法打开文件",
+  "notifyFileNotBoardMsg": "此文件不是白板文件，或已损坏。"
 }

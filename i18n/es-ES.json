@@ -59,5 +59,8 @@
   "comumMenu": "Menú",
   "iaTitulo": "IA",
   "erroGenerico": "Ocurrió un error inesperado",
-  "comumRetry": "Reintentar"
+  "comumRetry": "Reintentar",
+  "notifyFileOpenedTitle": "Pizarra abierta",
+  "notifyFileErrorTitle": "No se pudo abrir el archivo",
+  "notifyFileNotBoardMsg": "Este archivo no es una pizarra de Pizarra, o está dañado."
 }

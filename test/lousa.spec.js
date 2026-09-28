@@ -11,7 +11,7 @@ import { defineComponent } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import { criarSistemaFalso, criarBancoDeAnexos } from '@roqueos-apps/app-sdk/sistema-falso'
 import { TAMANHO_MAXIMO_DE_ANEXO } from '@roqueos-apps/app-sdk'
-import { useLousa, blobDaDataUrl } from '../src/useLousa.js'
+import { useLousa, blobDaDataUrl, TIPO_DO_ROSBOARD } from '../src/useLousa.js'
 import { ID_DO_INDICE, LIMITE_DO_QUADRO } from '../src/quadros.js'
 
 const ANA = { uid: 'user-1', nome: 'Ana' }
@@ -1005,7 +1005,7 @@ describe('a Lousa: exportar e guardar', () => {
     expect([salvo.nome, salvo.pasta, salvo.tipo]).toEqual([
       'untitled.rosboard',
       'Documentos',
-      'application/json',
+      TIPO_DO_ROSBOARD,
     ])
     const conteudo = JSON.parse(salvo.conteudo)
     expect([conteudo.version, conteudo.elements.map((el) => el.type)]).toEqual([2, ['rectangle']])
@@ -1039,5 +1039,111 @@ describe('a Lousa: exportar e guardar', () => {
     const blob = blobDaDataUrl('data:image/png;base64,cHg=')
     expect([blob.type, blob.size]).toEqual(['image/png', 2])
     expect(blobDaDataUrl('data:text/plain,ol%C3%A1').type).toBe('text/plain')
+  })
+})
+
+// O .rosboard pelo Finder: o duplo clique e o "abrir com" entregam o arquivo pela abertura. Até
+// a 0.1.3 o Quadro Branco guardava .rosboard e não abria nenhum (Goal 30).
+describe('a Lousa: abrir um .rosboard que veio do Finder', () => {
+  const RETANGULO = { id: 'r1', type: 'rectangle', x: 5, y: 5, w: 20, h: 10, angle: 0 }
+  const rosboard = (dados, nome = 'Reunião de segunda.rosboard') => ({
+    nome,
+    tipo: TIPO_DO_ROSBOARD,
+    conteudo: typeof dados === 'string' ? dados : JSON.stringify(dados),
+  })
+
+  it('com conta, o arquivo vira um quadro novo da conta, e é o que fica aberto', async () => {
+    const f = sistemaFalso()
+    const e = montarMotor(f)
+    await e.loadBoards()
+    f.abrirCom(rosboard({ version: 2, name: 'Reunião', elements: [RETANGULO] }))
+    await vi.waitFor(() => expect(f.colecoes.guardado('quadros', 'user-1')).toHaveLength(2))
+    const novo = f.colecoes.guardado('quadros', 'user-1').find((q) => q.name === 'Reunião')
+    expect(novo.elements.map((el) => el.id)).toEqual(['r1'])
+    expect([e.currentBoardId.value, e.boardName.value]).toEqual([novo.id, 'Reunião'])
+    expect(e.boards.value.map((b) => b.name)).toContain('Reunião')
+    expect(f.registro.avisos.at(-1)).toMatchObject({ titulo: 'notifyFileOpenedTitle' })
+  })
+
+  it('o arquivo que chega antes dos quadros abrirem espera por eles', async () => {
+    const f = sistemaFalso()
+    f.abrirCom(rosboard({ elements: [RETANGULO] }))
+    const e = montarMotor(f)
+    await e.loadBoards()
+    const nomes = f.colecoes.guardado('quadros', 'user-1').map((q) => q.name)
+    // Sem `name` dentro, o nome é o do arquivo sem a extensão.
+    expect(nomes.sort()).toEqual(['Reunião de segunda', 'untitled'])
+    expect(e.boardName.value).toBe('Reunião de segunda')
+  })
+
+  it('a imagem embutida no arquivo vira anexo da conta', async () => {
+    const banco = criarBancoDeAnexos()
+    const f = sistemaFalso({ bancoDeAnexos: banco })
+    const e = montarMotor(f)
+    await e.loadBoards()
+    const img = {
+      id: 'i1',
+      type: 'image',
+      x: 0,
+      y: 0,
+      w: 4,
+      h: 4,
+      angle: 0,
+      src: 'data:image/png;base64,cHg=',
+    }
+    f.abrirCom(rosboard({ name: 'Com foto', elements: [img] }))
+    await vi.waitFor(() => expect(f.anexos.guardados()).toHaveLength(1))
+    await vi.waitFor(() => expect(f.colecoes.guardado('quadros', 'user-1')).toHaveLength(2))
+    const novo = f.colecoes.guardado('quadros', 'user-1').find((q) => q.name === 'Com foto')
+    expect([novo.elements[0].src, novo.elements[0].anexo]).toEqual(['', f.anexos.guardados()[0]])
+  })
+
+  it('o que não é quadro avisa, e os quadros ficam como estavam', async () => {
+    for (const ruim of ['{isto não é json', JSON.stringify({ name: 'x' }), 'null']) {
+      const f = sistemaFalso()
+      const e = montarMotor(f)
+      await e.loadBoards()
+      const antes = f.colecoes.guardado('quadros', 'user-1').length
+      f.abrirCom(rosboard(ruim))
+      await vi.waitFor(() =>
+        expect(f.registro.avisos.at(-1)).toMatchObject({
+          titulo: 'notifyFileErrorTitle',
+          mensagem: 'notifyFileNotBoardMsg',
+          tipo: 'erro',
+        }),
+      )
+      expect(f.colecoes.guardado('quadros', 'user-1')).toHaveLength(antes)
+    }
+  })
+
+  it('no quadro da memória (a sessão do E2E), o arquivo entra nele, e desfazer volta ao de antes', async () => {
+    window.__ROS_E2E__ = { whiteboard: [] }
+    const f = sistemaFalso()
+    const e = montarMotor(f)
+    await e.loadBoards()
+    desenharRetangulo(e, 0, 0, 50, 50)
+    const meu = e.elements.value.map((el) => el.id)
+    f.abrirCom(rosboard({ name: 'Do Finder', elements: [RETANGULO] }))
+    await vi.waitFor(() => expect(e.boardName.value).toBe('Do Finder'))
+    expect(e.elements.value.map((el) => el.id)).toEqual(['r1'])
+    e.undo()
+    expect(e.elements.value.map((el) => el.id)).toEqual(meu)
+    expect(f.colecoes.guardado('quadros', 'user-1')).toEqual([])
+  })
+
+  it('sem conta, o sistema não lê o arquivo: a Lousa avisa, e o desenho fica', async () => {
+    const f = sistemaFalso({ identidade: { uid: null, nome: null } })
+    const e = montarMotor(f)
+    await e.loadBoards()
+    desenharRetangulo(e, 0, 0, 50, 50)
+    const meu = e.elements.value.map((el) => el.id)
+    f.abrirCom(rosboard({ name: 'Do Finder', elements: [RETANGULO] }))
+    await vi.waitFor(() =>
+      expect(f.registro.avisos.at(-1)).toMatchObject({
+        titulo: 'notifyFileErrorTitle',
+        mensagem: 'notifyOpenErrorMsg',
+      }),
+    )
+    expect(e.elements.value.map((el) => el.id)).toEqual(meu)
   })
 })

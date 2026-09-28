@@ -59,5 +59,8 @@
   "comumMenu": "Menü",
   "iaTitulo": "KI",
   "erroGenerico": "Ein unerwarteter Fehler ist aufgetreten",
-  "comumRetry": "Wiederholen"
+  "comumRetry": "Wiederholen",
+  "notifyFileOpenedTitle": "Tafel geöffnet",
+  "notifyFileErrorTitle": "Datei konnte nicht geöffnet werden",
+  "notifyFileNotBoardMsg": "Diese Datei ist keine Whiteboard-Tafel oder sie ist beschädigt."
 }

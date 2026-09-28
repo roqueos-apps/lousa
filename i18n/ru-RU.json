@@ -59,5 +59,8 @@
   "comumMenu": "Меню",
   "iaTitulo": "ИИ",
   "erroGenerico": "Произошла непредвиденная ошибка",
-  "comumRetry": "Повторить"
+  "comumRetry": "Повторить",
+  "notifyFileOpenedTitle": "Доска открыта",
+  "notifyFileErrorTitle": "Не удалось открыть файл",
+  "notifyFileNotBoardMsg": "Этот файл не является доской или повреждён."
 }

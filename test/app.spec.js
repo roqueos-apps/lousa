@@ -7,6 +7,7 @@ import { flushPromises } from '@vue/test-utils'
 import { criarSistemaFalso } from '@roqueos-apps/app-sdk/sistema-falso'
 import { validarManifesto, verificarSistema } from '@roqueos-apps/app-sdk'
 import lousa, { CAPACIDADES } from '../src/index.js'
+import { TIPO_DO_ROSBOARD } from '../src/useLousa.js'
 import manifesto from '../app.json'
 
 const ANA = { uid: 'ana', nome: 'Ana' }
@@ -48,6 +49,13 @@ describe('a Lousa pelo app-sdk', () => {
     expect([...CAPACIDADES]).toEqual(manifesto.capacidades)
     const { sistema } = criarSistemaFalso({ colecoes: manifesto.colecoes })
     expect(verificarSistema(sistema, { exigidas: [...CAPACIDADES] }).ok).toBe(true)
+  })
+
+  it('o Finder manda o .rosboard para a Lousa: ela declara o tipo que guarda', () => {
+    // O RoqueOS entrega o arquivo a quem declara o tipo em `abre` (o duplo clique e o "abrir
+    // com"); o mesmo tipo é o que o salvar grava. Sem isto, o .rosboard dava "não suportado".
+    expect(manifesto.abre).toEqual([TIPO_DO_ROSBOARD])
+    expect(manifesto.capacidades).toContain('abertura')
   })
 
   it('abre na conta, com a barra no idioma, e o primeiro quadro nasce na conta', async () => {
