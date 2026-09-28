@@ -7,8 +7,9 @@ usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 O Quadro Branco sai do RoqueOS para o próprio repositório, falando com ele pelo `app-sdk` 0.3.0
 e desenhado com o kit `ui` 0.3.0. Para quem usa, os quadros continuam onde estavam: mesmo lugar
-na conta, mesmos campos, o mesmo índice, e as imagens de antes abrem como abriam. A tag sai
-depois que a 0.3.0 do SDK tiver a tag dela na `main`.
+na conta, mesmos campos, o mesmo índice, e as imagens de antes abrem como abriam. A
+`v0.1.0` pina o SDK num commit do PR #5 do `app-sdk`; quando a 0.3.0 tiver a tag dela na
+`main`, sai a 0.1.1 pinada nela, e é essa que ganha data.
 
 ### Mudado
 
