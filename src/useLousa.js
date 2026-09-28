@@ -65,13 +65,13 @@ const TIPO_DO_AVISO = Object.freeze({
   error: 'erro',
 })
 
-/** Os bytes de uma data URL, sem esperar nada (a imagem embutida do convidado). */
 /**
  * O tipo do .rosboard. O RoqueOS reconhece o arquivo pela extensão e o entrega a quem declara este
  * tipo em `abre` no app.json: o Storage pode ter guardado o de antes como `application/json`.
  */
 export const TIPO_DO_ROSBOARD = 'application/vnd.roqueos.rosboard+json'
 
+/** Os bytes de uma data URL, sem esperar nada (a imagem embutida do convidado). */
 export function blobDaDataUrl(dataUrl) {
   const [cabeca = '', corpo = ''] = String(dataUrl).split(',', 2)
   const tipo = /^data:([^;,]+)/.exec(cabeca)?.[1] || 'application/octet-stream'
@@ -116,7 +116,6 @@ export async function reduzirNoCanvas(arquivo, dims, { criarUrl, soltarUrl, limi
   }
 }
 
-/** Um arquivo lido como data URL (a imagem do convidado, e a exportação). */
 /** O texto de um Blob. O `Blob.text()` do navegador, e o FileReader onde ele não existe. */
 export function lerComoTexto(blob) {
   if (typeof blob?.text === 'function') return blob.text()
@@ -128,6 +127,7 @@ export function lerComoTexto(blob) {
   })
 }
 
+/** Um arquivo lido como data URL (a imagem do convidado, e a exportação). */
 export function lerComoDataUrl(arquivo) {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader()
@@ -971,8 +971,8 @@ export function useLousa({
   // O Quadro Branco guardava .rosboard e não abria nenhum (nem dentro do RoqueOS, antes de sair):
   // o duplo clique no Finder dava "arquivo não suportado". O Finder agora entrega o arquivo pela
   // abertura. Com conta, ele vira um quadro novo da conta, e as imagens embutidas viram anexo,
-  // como o desenho do convidado; sem conta, entra no quadro da memória, e desfazer volta ao
-  // desenho de antes.
+  // como o desenho do convidado; no quadro da memória (a sessão do E2E), entra no aberto, e
+  // desfazer volta ao desenho de antes. Sem conta o sistema não lê arquivo: a Lousa avisa.
   async function abrirArquivo(arquivo) {
     let texto
     try {
