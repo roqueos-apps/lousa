@@ -9,6 +9,8 @@ RoqueOS. O repositório se chama `lousa`; na tela, o app é o Quadro Branco.
 
 Use de graça em [roqueos.com.br](https://roqueos.com.br), no computador, no celular e na TV.
 
+![O Quadro Branco do RoqueOS: um quadro de tarefas com notas adesivas ligadas por setas](docs/capa.jpg)
+
 _English below._
 
 ## Por que existe como repo

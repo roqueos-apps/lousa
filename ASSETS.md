@@ -9,3 +9,8 @@ Os ícones da tela vêm do kit de interface (`@roqueos-apps/ui`), que leva os tr
 [Material Icons](https://fonts.google.com/icons) do Google, sob Apache-2.0; a origem está no
 ASSETS.md do kit. O ícone da janela e da Launchpad é o `draw` do Material Icons, desenhado
 pelo RoqueOS a partir do nome no `app.json`.
+
+A capa do README (`docs/capa.jpg`) é um print do app dentro do RoqueOS (build 2579 do front, em
+pt-BR), tirado com o Playwright numa sessão de teste com conteúdo de exemplo, em 28/09/2026;
+autoral, MIT como o resto do repo. Ela não vai no pacote que o RoqueOS instala (o `files` do
+`package.json` não leva `docs/`).
