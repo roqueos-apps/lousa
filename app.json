@@ -1,0 +1,42 @@
+{
+  "id": "whiteboard",
+  "versaoDoContrato": 1,
+  "camada": "primeira-parte",
+  "nome": {
+    "pt-BR": "Quadro Branco",
+    "en-US": "Whiteboard",
+    "es-ES": "Pizarra",
+    "fr-FR": "Tableau Blanc",
+    "de-DE": "Whiteboard",
+    "ja-JP": "ホワイトボード",
+    "zh-CN": "白板",
+    "hi-IN": "व्हाइटबोर्ड",
+    "ru-RU": "Доска",
+    "ar-AR": "السبورة"
+  },
+  "descricao": {
+    "pt-BR": "Quadro branco para anotações e desenhos",
+    "en-US": "Whiteboard for notes and drawings",
+    "es-ES": "Pizarra para notas y dibujos",
+    "fr-FR": "Tableau blanc pour notes et dessins",
+    "de-DE": "Whiteboard für Notizen und Zeichnungen",
+    "ja-JP": "メモや図を描けるホワイトボード",
+    "zh-CN": "用于笔记和绘图的白板",
+    "hi-IN": "नोट्स और ड्रॉइंग के लिए व्हाइटबोर्ड",
+    "ru-RU": "Доска для заметок и рисунков",
+    "ar-AR": "سبورة للملاحظات والرسومات"
+  },
+  "icone": "draw",
+  "cor": "#0ea5e9",
+  "categoria": "creativity",
+  "janela": {
+    "largura": 1200,
+    "altura": 800,
+    "minLargura": 400,
+    "minAltura": 300
+  },
+  "capacidades": ["colecoes", "ia", "arquivos", "anexos"],
+  "colecoes": ["quadros", "indice"],
+  "autor": "Roque Ribeiro",
+  "licenca": "MIT"
+}

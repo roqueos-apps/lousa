@@ -1,0 +1,165 @@
+// As ferramentas da Lousa: a lateral na janela larga e o miolo da folha na estreita. Mesmas
+// regras do lousa.scss: do tema só as variáveis do contrato, com reserva; a cor do app vem do
+// `--lousa-acento` que a Lousa põe na raiz.
+
+.ferramentas {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: rgba(var(--ros-text-rgb, 255, 255, 255), 0.9);
+
+  &__secao {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__titulo {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: rgba(var(--ros-text-rgb, 255, 255, 255), 0.55);
+  }
+
+  &__lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+    gap: 6px;
+  }
+
+  &__ferramenta {
+    aspect-ratio: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--ros-fill-rgb, 255, 255, 255), 0.06);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: rgba(var(--ros-text-rgb, 255, 255, 255), 0.75);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+
+    &:hover {
+      background: rgba(var(--ros-fill-rgb, 255, 255, 255), 0.12);
+      color: var(--ros-text-100, #fff);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--lousa-acento, #0ea5e9);
+      outline-offset: 1px;
+    }
+
+    &--ativa {
+      background: rgba(var(--lousa-acento-rgb, 14, 165, 233), 0.2);
+      border-color: var(--lousa-acento, #0ea5e9);
+      color: var(--lousa-acento, #0ea5e9);
+    }
+  }
+
+  &__cores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    // Folga dos lados para o anel da amostra ativa (2px) não ser cortado na borda da folha.
+    padding: 3px 6px;
+  }
+
+  &__amostra {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    border: 1px solid rgba(var(--ros-line-rgb, 255, 255, 255), 0.12);
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+
+    &--anel {
+      border-color: rgba(var(--ros-white-rgb, 255, 255, 255), 0.35);
+    }
+
+    &--ativa {
+      box-shadow: 0 0 0 2px var(--lousa-acento, #0ea5e9);
+    }
+
+    &--propria {
+      background: rgba(var(--ros-fill-rgb, 255, 255, 255), 0.12);
+      color: rgba(var(--ros-text-rgb, 255, 255, 255), 0.75);
+
+      input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+    }
+  }
+
+  &__tracos {
+    display: flex;
+    gap: 6px;
+  }
+
+  &__traco {
+    flex: 1;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--ros-fill-rgb, 255, 255, 255), 0.06);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+
+    span {
+      background: rgba(var(--ros-text-rgb, 255, 255, 255), 0.95);
+      border-radius: 50%;
+    }
+
+    &--ativo {
+      border-color: var(--lousa-acento, #0ea5e9);
+      background: rgba(var(--lousa-acento-rgb, 14, 165, 233), 0.16);
+    }
+  }
+
+  &__opcao {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(var(--ros-text-rgb, 255, 255, 255), 0.8);
+    cursor: pointer;
+  }
+
+  &__cor-do-preenchimento {
+    width: 28px;
+    height: 24px;
+    border: none;
+    background: none;
+    margin-left: auto;
+    cursor: pointer;
+  }
+
+  &__exportar {
+    display: flex;
+    gap: 6px;
+
+    > * {
+      flex: 1;
+      min-width: 0;
+      justify-content: center;
+    }
+  }
+
+  &__inteiro {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,32 @@
+name: Ideia / Idea
+description: Uma mudança num app, uma função, um atalho. / A change, feature or shortcut in an app.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideia ainda solta cabe melhor nas Discussions. Aqui entra o que já dá para descrever como mudança.
+        Loose ideas fit better in Discussions. Use this when you can describe the change.
+  - type: textarea
+    id: problema
+    attributes:
+      label: Que problema ou vontade isso resolve? / What problem or wish does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Como seria? / What would it look like?
+      description: O que a pessoa vê e faz. / What people see and do.
+    validations:
+      required: true
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas que você pensou / Alternatives you considered
+  - type: checkboxes
+    id: codigo
+    attributes:
+      label: Contribuição / Contribution
+      options:
+        - label: Quero mandar o PR depois de combinar aqui. / I'd like to send the pull request once we agree here.

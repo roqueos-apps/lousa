@@ -1,0 +1,76 @@
+// A folha dos quadros. Mesmas regras do lousa.scss.
+
+.quadros {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__novo {
+    justify-content: center;
+  }
+
+  &__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 320px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: rgba(var(--ros-fill-rgb, 255, 255, 255), 0.04);
+    border: 1px solid transparent;
+
+    &--atual {
+      background: rgba(var(--lousa-acento-rgb, 14, 165, 233), 0.16);
+      border-color: rgba(var(--lousa-acento-rgb, 14, 165, 233), 0.4);
+    }
+  }
+
+  &__icone {
+    flex-shrink: 0;
+    color: rgba(var(--ros-text-rgb, 255, 255, 255), 0.55);
+  }
+
+  &__nome {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 6px 4px;
+    color: rgba(var(--ros-text-rgb, 255, 255, 255), 0.95);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:focus-visible {
+      outline: 2px solid var(--lousa-acento, #0ea5e9);
+      border-radius: 6px;
+    }
+  }
+
+  &__renomear {
+    flex: 1;
+    min-width: 0;
+    background: rgba(var(--ros-scrim-rgb, 0, 0, 0), 0.4);
+    border: 1px solid var(--lousa-acento, #0ea5e9);
+    border-radius: 6px;
+    color: var(--ros-text-100, #fff);
+    font: inherit;
+    font-size: 14px;
+    padding: 4px 8px;
+    outline: none;
+  }
+}

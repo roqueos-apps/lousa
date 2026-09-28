@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Pergunta ou ideia solta / Question or loose idea
+    url: https://github.com/orgs/roqueos-apps/discussions
+    about: Converse nas Discussions da organização. / Talk in the organization's Discussions.
+  - name: Conta, login ou dado que sumiu / Account, login or lost data
+    url: https://github.com/roqueos-apps/.github/blob/main/SUPPORT.md
+    about: Isso é do RoqueOS, não do app. / That belongs to RoqueOS, not the app.

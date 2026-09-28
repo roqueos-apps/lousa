@@ -1,0 +1,60 @@
+{
+  "name": "@roqueos-apps/lousa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "O Quadro Branco do RoqueOS: formas, traço à mão livre, texto, notas adesivas e imagens num quadro infinito, vários quadros na conta, exportar em PNG, SVG e PDF, e IA sobre o que está escrito, nos dez idiomas do sistema.",
+  "license": "MIT",
+  "author": "Roque Ribeiro",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/roqueos-apps/lousa.git"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./app.json": "./app.json"
+  },
+  "files": [
+    "src",
+    "i18n",
+    "app.json",
+    "ASSETS.md",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "dev": "vite",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "app:check": "app check",
+    "verificar": "yarn lint && yarn format:check && yarn test && yarn app:check"
+  },
+  "dependencies": {
+    "@roqueos-apps/app-sdk": "github:roqueos-apps/app-sdk#e175bd1d6733e36185a48a4926bf922720ef6005",
+    "@roqueos-apps/ui": "git+ssh://git@github.com/roqueos-apps/ui.git#v0.3.0"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.14.0",
+    "@vitejs/plugin-vue": "6.0.3",
+    "@vue/test-utils": "2.4.6",
+    "eslint": "9.14.0",
+    "eslint-plugin-vue": "10.6.2",
+    "globals": "16.4.0",
+    "jsdom": "26.1.0",
+    "prettier": "3.3.3",
+    "sass": "1.97.1",
+    "vite": "7.3.1",
+    "vitest": "3.2.4",
+    "vue": "3.5.29",
+    "vue-eslint-parser": "10.2.0"
+  }
+}

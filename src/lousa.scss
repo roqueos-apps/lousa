@@ -1,0 +1,257 @@
+// O visual da Lousa.
+//
+// As cores do tema vêm só das variáveis do contrato do app-sdk (`--ros-text-rgb`,
+// `--ros-fill-rgb`, `--ros-line-rgb`, `--ros-surface-0-rgb`, `--ros-black-rgb`,
+// `--ros-text-100`), sempre com o valor de reserva do tema padrão, para o `yarn dev` ficar igual
+// ao RoqueOS. As cores que são da Lousa usam o prefixo `--lousa-`: o `--ros-` é do sistema, e o
+// `app check` reprova declarar um. O papel do quadro é claro de propósito, nos dois temas: é o
+// que se exporta, e o traço padrão é quase preto.
+
+.lousa {
+  --lousa-texto: rgba(var(--ros-text-rgb, 255, 255, 255), 0.95);
+  --lousa-texto-2: rgba(var(--ros-text-rgb, 255, 255, 255), 0.75);
+  --lousa-texto-3: rgba(var(--ros-text-rgb, 255, 255, 255), 0.6);
+  --lousa-borda: rgba(var(--ros-line-rgb, 255, 255, 255), 0.08);
+  --lousa-borda-2: rgba(var(--ros-line-rgb, 255, 255, 255), 0.12);
+  --lousa-realce: rgba(var(--ros-fill-rgb, 255, 255, 255), 0.1);
+  --lousa-fundo: rgb(var(--ros-surface-0-rgb, 28, 28, 30));
+  --lousa-lateral: rgba(var(--ros-surface-0-rgb, 28, 28, 30), 0.6);
+  --lousa-barra: rgba(var(--ros-black-rgb, 0, 0, 0), 0.18);
+  --lousa-papel: #f6f7f9;
+  --lousa-pontos: rgba(0, 0, 0, 0.12);
+  --lousa-tinta: #1e1e1e;
+  --lousa-flutuante: rgba(20, 20, 22, 0.85);
+  --lousa-desfoque: blur(10px);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  color: var(--lousa-texto);
+  background: var(--lousa-fundo);
+  // O app não herda o box-sizing do Quasar fora do RoqueOS: declara o dele.
+  box-sizing: border-box;
+  font-family: inherit;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
+  }
+
+  // O perfil leve do RoqueOS (aparelho fraco): sem a malha e sem desfoque.
+  &--leve {
+    --lousa-desfoque: none;
+    --lousa-flutuante: rgba(20, 20, 22, 0.95);
+
+    .lousa__malha {
+      display: none;
+    }
+  }
+
+  &__malha {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(
+        55% 45% at 12% 0%,
+        rgba(var(--lousa-acento-rgb), 0.16),
+        transparent 70%
+      ),
+      radial-gradient(45% 40% at 100% 100%, rgba(var(--lousa-acento-rgb), 0.1), transparent 70%);
+  }
+
+  &__barra,
+  &__corpo {
+    position: relative;
+    z-index: 1;
+  }
+
+  &__barra {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--lousa-borda);
+    background: var(--lousa-barra);
+    flex-shrink: 0;
+
+    &--estreita {
+      padding: 6px 8px;
+    }
+  }
+
+  &__grupo {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  &__separador {
+    width: 1px;
+    height: 22px;
+    background: var(--lousa-realce);
+    margin: 0 4px;
+  }
+
+  &__espaco {
+    flex: 1;
+  }
+
+  &__nome-do-quadro {
+    font-size: 12px;
+    color: var(--lousa-texto-3);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__titulo {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__zoom {
+    font-size: 12px;
+    min-width: 44px;
+    text-align: center;
+    color: var(--lousa-texto-2);
+  }
+
+  &__corpo {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  // Vazia: o painel de IA do sistema entra aqui e cobre o corpo.
+  &__ancora-ia {
+    display: contents;
+  }
+
+  &__lateral {
+    width: 248px;
+    flex-shrink: 0;
+    padding: 14px;
+    // `overflow: hidden auto`, e não `overflow-y: auto`: o `overflow-y` sozinho deixa o x em
+    // `auto`, e um estouro de meio pixel punha uma barra horizontal na lateral.
+    overflow: hidden auto;
+    border-right: 1px solid var(--lousa-borda);
+    background: var(--lousa-lateral);
+  }
+
+  &__palco {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background-color: var(--lousa-papel);
+    cursor: crosshair;
+
+    &--grade {
+      background-image: radial-gradient(circle, var(--lousa-pontos) 1px, transparent 1px);
+    }
+
+    &--arrastando {
+      cursor: grab;
+    }
+  }
+
+  &__svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+
+  &__sticky-text {
+    width: 100%;
+    height: 100%;
+    padding: 8px 10px;
+    box-sizing: border-box;
+    color: var(--lousa-tinta);
+    font-family: sans-serif;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: hidden;
+  }
+
+  &__sticky-shadow {
+    filter: drop-shadow(0 2px 4px rgba(var(--ros-black-rgb, 0, 0, 0), 0.18));
+  }
+
+  &__editor {
+    position: absolute;
+    z-index: 6;
+    border: 1px solid var(--lousa-acento);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.96);
+    font-family: sans-serif;
+    padding: 4px 6px;
+    resize: none;
+    outline: none;
+    overflow: hidden;
+
+    &--sticky {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: 0 0 0 2px var(--lousa-acento);
+    }
+  }
+
+  &__sobre {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--lousa-fundo);
+    color: var(--lousa-texto);
+  }
+
+  &__zoom-flutuante {
+    position: absolute;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--lousa-flutuante);
+    border: 1px solid var(--lousa-borda-2);
+    backdrop-filter: var(--lousa-desfoque);
+    color: #fff;
+    z-index: 5;
+
+    span {
+      font-size: 12px;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    // A pílula é escura nos dois temas: o botão do kit, que segue a cor do tema, fica claro aqui.
+    :deep(button) {
+      color: #fff;
+    }
+  }
+
+  &__acoes-da-folha {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 6px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--lousa-borda);
+  }
+}
