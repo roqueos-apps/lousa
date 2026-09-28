@@ -1,6 +1,6 @@
 {
   "name": "@roqueos-apps/lousa",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "O Quadro Branco do RoqueOS: formas, traço à mão livre, texto, notas adesivas e imagens num quadro infinito, vários quadros na conta, exportar em PNG, SVG e PDF, e IA sobre o que está escrito, nos dez idiomas do sistema.",
   "license": "MIT",
@@ -37,7 +37,7 @@
     "verificar": "yarn lint && yarn format:check && yarn test && yarn app:check"
   },
   "dependencies": {
-    "@roqueos-apps/app-sdk": "github:roqueos-apps/app-sdk#e175bd1d6733e36185a48a4926bf922720ef6005",
+    "@roqueos-apps/app-sdk": "github:roqueos-apps/app-sdk#v0.3.0",
     "@roqueos-apps/ui": "git+ssh://git@github.com/roqueos-apps/ui.git#v0.6.0"
   },
   "peerDependencies": {

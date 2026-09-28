@@ -668,9 +668,9 @@
   resolved "https://registry.yarnpkg.com/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.63.5.tgz#66e1eb4e47e993314699bfd03eaa54e36790e8d9"
   integrity sha512-ypfC34F3RKXvCXBglGqGMsUSMKlgwd1HX9AOAlx9RoZZ6GaI42YHVeKpzg3JG+wpBUJYTG+NNZhqbDWL8tBZkw==
 
-"@roqueos-apps/app-sdk@github:roqueos-apps/app-sdk#e175bd1d6733e36185a48a4926bf922720ef6005":
+"@roqueos-apps/app-sdk@github:roqueos-apps/app-sdk#v0.3.0":
   version "0.3.0"
-  resolved "https://codeload.github.com/roqueos-apps/app-sdk/tar.gz/e175bd1d6733e36185a48a4926bf922720ef6005"
+  resolved "https://codeload.github.com/roqueos-apps/app-sdk/tar.gz/029e6c15c7078de72abe66c43439be03a26ab060"
 
 "@roqueos-apps/ui@git+ssh://git@github.com/roqueos-apps/ui.git#v0.6.0":
   version "0.6.0"
