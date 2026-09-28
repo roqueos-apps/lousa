@@ -672,9 +672,9 @@
   version "0.3.0"
   resolved "https://codeload.github.com/roqueos-apps/app-sdk/tar.gz/e175bd1d6733e36185a48a4926bf922720ef6005"
 
-"@roqueos-apps/ui@git+ssh://git@github.com/roqueos-apps/ui.git#v0.3.0":
-  version "0.3.0"
-  resolved "git+ssh://git@github.com/roqueos-apps/ui.git#e12fd3803a2bb44f864ff68b2aa490444aba1cb2"
+"@roqueos-apps/ui@git+ssh://git@github.com/roqueos-apps/ui.git#v0.6.0":
+  version "0.6.0"
+  resolved "git+ssh://git@github.com/roqueos-apps/ui.git#d2a66cb03a64950de8949b422b26b03243cc8c4d"
 
 "@types/chai@^5.2.2":
   version "5.2.3"

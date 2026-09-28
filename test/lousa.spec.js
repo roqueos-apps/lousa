@@ -10,7 +10,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { defineComponent } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import { criarSistemaFalso, criarBancoDeAnexos } from '@roqueos-apps/app-sdk/sistema-falso'
-import { useLousa } from '../src/useLousa.js'
+import { TAMANHO_MAXIMO_DE_ANEXO } from '@roqueos-apps/app-sdk'
+import { useLousa, blobDaDataUrl } from '../src/useLousa.js'
 import { ID_DO_INDICE, LIMITE_DO_QUADRO } from '../src/quadros.js'
 
 const ANA = { uid: 'user-1', nome: 'Ana' }
@@ -26,7 +27,7 @@ const sistemaFalso = (opcoes = {}) =>
     ...opcoes,
   })
 
-function montarMotor(f = sistemaFalso()) {
+function montarMotor(f = sistemaFalso(), extra = {}) {
   const Harness = defineComponent({
     setup(_, { expose }) {
       const e = useLousa({
@@ -34,6 +35,7 @@ function montarMotor(f = sistemaFalso()) {
         t,
         criarUrl: () => `blob:local-${++urls}`,
         soltarUrl: vi.fn(),
+        ...extra,
       })
       expose({ e })
       return () => null
@@ -45,6 +47,40 @@ function montarMotor(f = sistemaFalso()) {
 const mountEngine = () => montarMotor()
 
 const RECT_RECT = { left: 0, top: 0, width: 1000, height: 800 }
+
+/** A coleção `nome` do sistema falso com o `ler` trocado (a rede que cai no meio). */
+function lerComFalha(f, nome, falha) {
+  const abrirDeVerdade = f.sistema.colecoes.abrir
+  f.sistema.colecoes.abrir = (qual) => {
+    const c = abrirDeVerdade(qual)
+    return qual === nome
+      ? { ...c, ler: (id) => (falha(id) ? Promise.reject(new Error('sem rede')) : c.ler(id)) }
+      : c
+  }
+}
+
+/** A Ana com dois quadros, A (aberto) e B. */
+function doisQuadros(f) {
+  const retB = { id: 'rb', type: 'rectangle', x: 5, y: 5, w: 5, h: 5, angle: 0 }
+  f.colecoes.semear('indice', 'user-1', [
+    {
+      id: ID_DO_INDICE,
+      lastBoardId: 'wb_a',
+      boards: [
+        { id: 'wb_a', name: 'A' },
+        { id: 'wb_b', name: 'B' },
+      ],
+    },
+  ])
+  f.colecoes.semear('quadros', 'user-1', [
+    { id: 'wb_a', name: 'A', elements: [] },
+    { id: 'wb_b', name: 'B', elements: [retB] },
+  ])
+  return retB
+}
+
+const guardadosPorId = (f) =>
+  Object.fromEntries(f.colecoes.guardado('quadros', 'user-1').map((q) => [q.id, q]))
 
 afterEach(() => {
   delete window.__ROS_E2E__
@@ -256,8 +292,166 @@ describe('a Lousa: os quadros na conta', () => {
     await flushPromises()
     expect(e.currentBoardId.value).toBe('local')
     expect(e.elements.value).toHaveLength(1)
-    f.mudarIdentidade(ANA)
     expect(f.colecoes.guardado('quadros', 'user-1')).toEqual([])
+  })
+
+  it('convidado que entra na conta leva o desenho: vira um quadro novo, com a imagem como anexo', async () => {
+    const banco = criarBancoDeAnexos()
+    const f = sistemaFalso({ identidade: { uid: null, nome: null }, bancoDeAnexos: banco })
+    const retX = { id: 'rx', type: 'rectangle', x: 1, y: 1, w: 1, h: 1, angle: 0 }
+    f.colecoes.semear('indice', 'user-1', [
+      { id: ID_DO_INDICE, lastBoardId: 'wb_x', boards: [{ id: 'wb_x', name: 'X' }] },
+    ])
+    f.colecoes.semear('quadros', 'user-1', [{ id: 'wb_x', name: 'X', elements: [retX] }])
+    const e = montarMotor(f)
+    await e.loadBoards()
+    desenharRetangulo(e, 0, 0, 50, 50)
+    e.elements.value.push({
+      id: 'img',
+      type: 'image',
+      x: 0,
+      y: 0,
+      w: 10,
+      h: 10,
+      angle: 0,
+      src: 'data:image/png;base64,cHg=',
+    })
+    f.mudarIdentidade(ANA)
+    await vi.waitFor(() => expect(f.colecoes.guardado('quadros', 'user-1')).toHaveLength(2))
+    await vi.waitFor(() =>
+      expect(f.registro.avisos.at(-1)).toMatchObject({ titulo: 'notifyGuestSavedTitle' }),
+    )
+    const quadros = guardadosPorId(f)
+    const novo = Object.values(quadros).find((q) => q.id !== 'wb_x')
+    expect(novo.elements.map((el) => el.type)).toEqual(['rectangle', 'image'])
+    const img = novo.elements[1]
+    expect([img.src, /^anx_[a-z2-7]{24}$/.test(img.anexo)]).toEqual(['', true])
+    expect(f.anexos.guardados()).toEqual([img.anexo])
+    expect(e.currentBoardId.value).toBe(novo.id)
+    expect(e.srcDaImagem(e.elements.value[1])).toMatch(/^blob:local-/)
+    // O quadro que já era da conta não é tocado.
+    expect(quadros.wb_x.elements).toEqual([retX])
+    const [indice] = f.colecoes.guardado('indice', 'user-1')
+    expect([indice.lastBoardId, indice.boards.map((b) => b.id)]).toEqual([
+      novo.id,
+      ['wb_x', novo.id],
+    ])
+  })
+
+  it('o desenho do convidado espera: se os quadros da conta não abrem, vai na próxima abertura', async () => {
+    const f = sistemaFalso({ identidade: { uid: null, nome: null } })
+    let semRede = true
+    lerComFalha(f, 'indice', () => semRede)
+    const erro = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const e = montarMotor(f)
+    await e.loadBoards()
+    desenharRetangulo(e, 0, 0, 50, 50)
+    f.mudarIdentidade(ANA)
+    await vi.waitFor(() => expect(e.error.value).toBe('load'))
+    expect(f.colecoes.guardado('quadros', 'user-1')).toEqual([])
+    semRede = false
+    await e.loadBoards()
+    await flushPromises()
+    // Sem índice, a conta ganha o quadro vazio de sempre, e o desenho vira o segundo.
+    const quadros = f.colecoes.guardado('quadros', 'user-1')
+    expect(quadros.map((q) => q.elements.map((el) => el.type))).toEqual([[], ['rectangle']])
+    expect(e.elements.value.map((el) => el.type)).toEqual(['rectangle'])
+    erro.mockRestore()
+  })
+
+  it('o desenho do convidado não se perde se gravar o quadro novo falhar: vai na próxima', async () => {
+    const f = sistemaFalso({ identidade: { uid: null, nome: null } })
+    // A conta tem um quadro, que abre (a leitura passa); o que cai é gravar o quadro novo.
+    f.colecoes.semear('indice', 'user-1', [
+      { id: ID_DO_INDICE, lastBoardId: 'wb_x', boards: [{ id: 'wb_x', name: 'X' }] },
+    ])
+    f.colecoes.semear('quadros', 'user-1', [{ id: 'wb_x', name: 'X', elements: [] }])
+    let semRede = true
+    const abrirDeVerdade = f.sistema.colecoes.abrir
+    f.sistema.colecoes.abrir = (qual) => {
+      const c = abrirDeVerdade(qual)
+      if (qual !== 'quadros') return c
+      const cair = (fn) => (id, campos) =>
+        semRede ? Promise.reject(new Error('sem rede')) : fn(id, campos)
+      return { ...c, criar: cair(c.criar), atualizar: cair(c.atualizar) }
+    }
+    const erro = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const e = montarMotor(f)
+    await e.loadBoards()
+    desenharRetangulo(e, 0, 0, 50, 50)
+    f.mudarIdentidade(ANA)
+    await vi.waitFor(() => expect(e.error.value).toBe('load'))
+    semRede = false
+    await e.loadBoards()
+    await flushPromises()
+    const tipos = f.colecoes
+      .guardado('quadros', 'user-1')
+      .map((q) => q.elements.map((el) => el.type))
+    expect(tipos).toContainEqual(['rectangle'])
+    erro.mockRestore()
+  })
+
+  it('quem sai da conta não leva o quadro da conta para o convidado', async () => {
+    const f = sistemaFalso()
+    const e = montarMotor(f)
+    await e.loadBoards()
+    desenharRetangulo(e, 0, 0, 50, 50)
+    await e.flushSave()
+    f.mudarIdentidade({ uid: null, nome: null })
+    await vi.waitFor(() => expect(e.currentBoardId.value).toBe('local'))
+    expect(e.elements.value).toEqual([])
+    f.mudarIdentidade({ uid: 'bia', nome: 'Bia' })
+    await vi.waitFor(() => expect(f.colecoes.guardado('quadros', 'bia')).toHaveLength(1))
+    await flushPromises()
+    expect(f.colecoes.guardado('quadros', 'bia')[0].elements).toEqual([])
+  })
+
+  it('trocar para um quadro que não abre deixa o aberto como estava, e nada grava por cima', async () => {
+    vi.useFakeTimers()
+    const f = sistemaFalso()
+    const retB = doisQuadros(f)
+    let semRede = true
+    lerComFalha(f, 'quadros', (id) => semRede && id === 'wb_b')
+    const erro = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const e = montarMotor(f)
+    await e.loadBoards()
+    await flushPromises()
+    expect(await e.switchBoard('wb_b')).toBe(false)
+    expect([e.currentBoardId.value, e.boardName.value]).toEqual(['wb_a', 'A'])
+    expect(f.registro.avisos.at(-1)).toEqual({
+      mensagem: 'notifyOpenErrorMsg',
+      tipo: 'erro',
+      fixo: false,
+      titulo: 'notifyOpenErrorTitle',
+    })
+    desenharRetangulo(e, 0, 0, 50, 50)
+    vi.advanceTimersByTime(900)
+    await flushPromises()
+    const quadros = guardadosPorId(f)
+    expect(quadros.wb_b.elements).toEqual([retB])
+    expect(quadros.wb_a.elements.map((el) => el.type)).toEqual(['rectangle'])
+    // A rede voltou: a mesma troca abre o B.
+    semRede = false
+    expect(await e.switchBoard('wb_b')).toBe(true)
+    expect(e.elements.value.map((el) => el.id)).toEqual(['rb'])
+    erro.mockRestore()
+  })
+
+  it('apagar o aberto quando o próximo não abre mostra a tela de erro, e o tentar de novo abre', async () => {
+    const f = sistemaFalso()
+    doisQuadros(f)
+    let semRede = true
+    lerComFalha(f, 'quadros', (id) => semRede && id === 'wb_b')
+    const erro = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const e = montarMotor(f)
+    await e.loadBoards()
+    await e.deleteBoard('wb_a')
+    expect(e.error.value).toBe('load')
+    expect(f.colecoes.guardado('quadros', 'user-1').map((q) => q.id)).toEqual(['wb_b'])
+    semRede = false
+    await e.loadBoards()
+    expect([e.error.value, e.currentBoardId.value]).toEqual([null, 'wb_b'])
+    erro.mockRestore()
   })
 
   it('no E2E, a semente do harness é o quadro, e nada vai para a conta', async () => {
@@ -723,6 +917,31 @@ describe('a Lousa: imagem no quadro', () => {
     erro.mockRestore()
   })
 
+  it('imagem acima do limite do anexo entra redesenhada menor, em vez de recusada', async () => {
+    const reduzidas = []
+    const f = sistemaFalso()
+    const e = montarMotor(f, {
+      reduzirImagem: async (arquivo, dims) => (
+        reduzidas.push([arquivo.name, dims]), new Blob(['menor'], { type: 'image/jpeg' })
+      ),
+    })
+    await e.loadBoards()
+    fingirImagem(4000, 3000)
+    const grande = new File(['x'], 'print.png', { type: 'image/png' })
+    Object.defineProperty(grande, 'size', { value: TAMANHO_MAXIMO_DE_ANEXO + 1 })
+    await e.addImageFromFile(grande, { x: 0, y: 0 })
+    expect(reduzidas).toEqual([['print.png', { w: 4000, h: 3000 }]])
+    expect(e.elements.value).toHaveLength(1)
+    const guardada = await f.sistema.anexos.ler(e.elements.value[0].anexo)
+    expect(guardada.type).toBe('image/jpeg')
+    // No limite, a imagem vai como veio.
+    const noLimite = new File(['x'], 'a.png', { type: 'image/png' })
+    Object.defineProperty(noLimite, 'size', { value: TAMANHO_MAXIMO_DE_ANEXO })
+    await e.addImageFromFile(noLimite, { x: 0, y: 0 })
+    expect(reduzidas).toHaveLength(1)
+    expect(e.elements.value).toHaveLength(2)
+  })
+
   it('arquivo que não é imagem não vira elemento', async () => {
     const e = mountEngine()
     await e.addImageFromFile(new File(['x'], 'a.txt', { type: 'text/plain' }), { x: 0, y: 0 })
@@ -791,5 +1010,34 @@ describe('a Lousa: exportar e guardar', () => {
     const conteudo = JSON.parse(salvo.conteudo)
     expect([conteudo.version, conteudo.elements.map((el) => el.type)]).toEqual([2, ['rectangle']])
     expect(e.f.registro.eventos).toEqual([{ nome: 'save', dados: {} }])
+  })
+
+  it('o .rosboard leva a imagem dentro, e não o anexo, que quem recebe não abre', async () => {
+    const e = montarMotor()
+    await e.loadBoards()
+    const { id } = await e.f.sistema.anexos.guardar(new Blob(['px'], { type: 'image/png' }))
+    e.elements.value.push({
+      id: 'i',
+      type: 'image',
+      x: 0,
+      y: 0,
+      w: 10,
+      h: 10,
+      angle: 0,
+      src: '',
+      anexo: id,
+    })
+    await e.saveRosboard()
+    const [img] = JSON.parse(e.f.registro.arquivos[0].conteudo).elements
+    expect(img.anexo).toBeUndefined()
+    expect(img.src).toMatch(/^data:image\/png;base64,/)
+    // O quadro na conta continua com o anexo: o arquivo é que leva a imagem.
+    expect(e.elements.value.at(-1).anexo).toBe(id)
+  })
+
+  it('os bytes da imagem embutida saem da data URL, com o tipo', async () => {
+    const blob = blobDaDataUrl('data:image/png;base64,cHg=')
+    expect([blob.type, blob.size]).toEqual(['image/png', 2])
+    expect(blobDaDataUrl('data:text/plain,ol%C3%A1').type).toBe('text/plain')
   })
 })

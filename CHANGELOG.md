@@ -3,6 +3,36 @@
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e o projeto
 usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.1.1] - sem data até o RoqueOS instalar
+
+A auditoria de paridade de 28/09/2026 (Goal 28): o founder pediu que nenhuma funcionalidade
+se perdesse na saída do núcleo.
+
+### Adicionado
+
+- `paridade.json`: o inventário do que o Quadro Branco fazia dentro do RoqueOS, item por item, e
+  o que aconteceu com cada coisa na saída (86 itens: 73 mantidas, 13 mudaram, 0 perdidas). Cada
+  item cita o teste deste repo que o prova, ou a evidência, e o RoqueOS confere o arquivo no
+  pacote instalado: teste citado que não existe mais, estado de dúvida ou perda sem decisão
+  escrita reprovam. O arquivo vai no pacote (`files`).
+
+### Corrigido
+
+- **A falha de rede ao trocar de quadro não grava mais um quadro por cima do outro.** O
+  quadro aberto fica como estava, com o aviso de que o escolhido não abriu. Apagar o quadro
+  aberto com o próximo fora do ar mostra a tela de erro com o tentar de novo, e a lista sem
+  último aberto abre o primeiro quadro em vez de criar um novo.
+- **Quem desenha sem conta e entra com a Lousa aberta não perde o desenho**: ele vira um
+  quadro novo da conta (as imagens embutidas viram anexo), e espera a próxima abertura se a
+  primeira falhar. Trocar de conta não grava mais o quadro de antes na conta nova.
+- **O `.rosboard` leva as imagens dentro**, e não o anexo, que só a conta de quem guardou abre.
+- **A imagem acima de 10 MB entra redesenhada menor**, em vez de recusada.
+
+### Mudado
+
+- Abrindo os quadros, a barra do carregando corre, parada no perfil leve (kit `ui` 0.6.0); a
+  folha do celular fecha também arrastando a alça.
+
 ## [0.1.0] - sem data até o RoqueOS instalar
 
 O Quadro Branco sai do RoqueOS para o próprio repositório, falando com ele pelo `app-sdk` 0.3.0

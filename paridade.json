@@ -1,0 +1,706 @@
+{
+  "versao": 1,
+  "app": "whiteboard",
+  "antes": "O Quadro Branco dentro do RoqueOS, até 28/09/2026: o componente da tela, o painel de ferramentas, o gerenciador de quadros, a composable do motor e as composables de elementos, exportação, geometria, histórico, PDF, persistência e serialização, os textos da Lousa nos dez idiomas, mais a entrada whiteboard no registro de apps do RoqueOS.",
+  "auditoria": "28/09/2026: auditoria linha a linha (87 linhas) do código de antes, dentro do RoqueOS, contra o de depois (roqueos-apps/lousa em 8429f3f, a v0.1.0) e o lado do sistema do RoqueOS (identidade, coleções, anexos, arquivos). As 6 linhas em dúvida (#66, #67, #73, #76, #83, #84) e os consertos de 28/09 (#21, #53, #62, #71) seguem os veredictos conferidos no código do RoqueOS no mesmo dia. As linhas do app citadas em evidencia são da v0.1.0; o que foi consertado depois dela está nos testes citados, que são os do repo hoje. Pulada: a linha 87 (agrupar, alinhar, ordem das camadas, conectores que seguem a forma, encaixe, fonte e tamanho do texto, abrir ou importar arquivo, tela de vazio, pressão da caneta, modelos), que não existia antes. A Lousa ainda não está em produção (esperando a tag v0.3.0 do SDK): nada foi medido com sessão real nem num iPhone de verdade; o QA do commit da saída rodou no dist em Chromium, WebKit e WebKit com perfil de iPhone.",
+  "funcionalidades": [
+    {
+      "o_que": "Clicar num elemento seleciona o que está por cima",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › selects then moves an element, recording history",
+        "test/geometry.spec.js › hitTestElements finds the topmost element under a point"
+      ],
+      "evidencia": "Lógica idêntica: antes, dentro do RoqueOS; hoje src/useLousa.js:323-348 e src/geometry.js, arquivo igual ao de antes."
+    },
+    {
+      "o_que": "Shift+clique soma ou tira um elemento da seleção",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:338-342 e src/Lousa.vue:586, a mesma lógica. Sem teste, nem antes; não medido na tela."
+    },
+    {
+      "o_que": "Seleção por caixa: vale a partir de 4 px em qualquer eixo e pega só o que cabe inteiro",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › tremor de 3px não seleciona; 4px seleciona",
+        "test/lousa.spec.js › arrasto alto e fino seleciona: basta UM dos lados passar do limite",
+        "test/geometry.spec.js › elementsInBox returns fully-contained elements"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:350-357,436-444."
+    },
+    {
+      "o_que": "Mover um ou vários elementos; só vira passo do histórico se moveu",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › arrastar de verdade grava o passo",
+        "test/lousa.spec.js › clicar sem arrastar não grava passo no histórico",
+        "test/geometry.spec.js › applyMove translates the element"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:386-393,445-447. Os testes movem um elemento; mover vários de uma vez fica sem teste."
+    },
+    {
+      "o_que": "Redimensionar pelas 8 alças, com mínimo de 8 px e respeitando o giro",
+      "estado": "mantida",
+      "testes": [
+        "test/geometry.spec.js › applyResize from the SE handle grows w/h, keeping the NW corner fixed",
+        "test/geometry.spec.js › applyResize from the NW handle keeps the SE corner fixed"
+      ],
+      "evidencia": "Só a geometria tem teste (src/geometry.js, igual ao de antes). O arrasto pela alça no motor (antes, dentro do RoqueOS; hoje src/useLousa.js:330-335,394-402), o mínimo de 8 px e o elemento girado ficam sem teste."
+    },
+    {
+      "o_que": "Girar pela alça de cima, livre, sem encaixe",
+      "estado": "mantida",
+      "testes": [
+        "test/geometry.spec.js › applyRotate sets angle from a pointer position (right of center → 90°)",
+        "test/serialize.spec.js › renders rotated elements inside a rotate group"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:325-328,403-410. O arrasto da alça no motor fica sem teste."
+    },
+    {
+      "o_que": "Caixa de seleção e alças desenhadas na tela",
+      "estado": "mantida",
+      "testes": [
+        "test/geometry.spec.js › handlePositions returns 8 resize handles + a rotate handle",
+        "test/geometry.spec.js › selectionBounds — single element keeps its bbox + angle",
+        "test/geometry.spec.js › selectionBounds — multiple elements is an axis-aligned union"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:256-304, alças com um selecionado e traço de 1/zoom. O desenho no SVG não tem teste de tela. A cor do destaque está no item de cor de destaque e tema."
+    },
+    {
+      "o_que": "Ferramenta Mão arrasta a vista",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › a grade começa ligada e o modo pan liga a bandeira enquanto arrasta"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:275-280,361-366 e src/Ferramentas.vue:148."
+    },
+    {
+      "o_que": "Espaço+arrastar e botão do meio do mouse arrastam a vista, com cursor de mão",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:81,580-587,705-708,747-749. Sem teste; não medido na tela."
+    },
+    {
+      "o_que": "Lápis e Caneta desenham à mão livre, iguais e sem pressão",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › o desenho vai para a conta depois do atraso",
+        "test/elements.spec.js › finalizeDraft normalizes a freehand stroke into [0,1] points",
+        "test/elements.spec.js › freehandPathD builds an M…L… path"
+      ],
+      "evidencia": "Os dois tipos estão em FREEHAND_TYPES (src/elements.js:18, igual ao de antes); motor antes, dentro do RoqueOS; hoje src/useLousa.js:282-292,367-376. O teste desenha com o lápis; a caneta não tem teste próprio."
+    },
+    {
+      "o_que": "Linha e Seta guardam a direção, com a ponta proporcional à espessura",
+      "estado": "mantida",
+      "testes": [
+        "test/elements.spec.js › finalizeDraft encodes segment direction + makes a positive bbox"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/elements.js (igual) e src/Lousa.vue:129-150. A ponta da seta na tela fica sem teste."
+    },
+    {
+      "o_que": "Retângulo, Elipse e Losango, descartados abaixo de 3 px",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › draws a shape via the pointer machine",
+        "test/elements.spec.js › finalizeDraft rejects a too-small shape",
+        "test/elements.spec.js › createElement makes a zero-size bbox element with style"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:101-128. Os testes usam o retângulo; elipse, losango e o desenho no SVG ficam sem teste (antes o spec do componente de antes, dentro do RoqueOS, cobria o desenho)."
+    },
+    {
+      "o_que": "Prévia do que está sendo desenhado, a 75% de opacidade",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:205-253. Sem teste; não medido na tela."
+    },
+    {
+      "o_que": "Texto: o clique cria na cor do traço, em 24 px; texto vazio some ao confirmar",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › texto com conteúdo sobrevive ao commit",
+        "test/lousa.spec.js › texto vazio (ou só espaço) é recolhido no commit"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:294-303,508-519. A cor e os 24 px ficam sem teste."
+    },
+    {
+      "o_que": "Nota adesiva de 180×180, texto de 18 px, em 6 cores, que fica mesmo vazia",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › creates a sticky note from the sticky tool",
+        "test/lousa.spec.js › post-it vazio fica no quadro"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:305-313 e src/Ferramentas.vue:64-79,143. Tamanho, fonte e as 6 cores ficam sem teste."
+    },
+    {
+      "o_que": "Editar texto ou nota: duplo clique abre, Enter confirma, Shift+Enter quebra linha, Esc cancela, clicar fora confirma",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › só texto e post-it entram em edição; um retângulo não",
+        "test/lousa.spec.js › startEditElement num id que não existe não abre edição"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:322-333,567-573,597-612 e src/useLousa.js:495-522. O motor tem teste; o duplo clique, as teclas e o foco em 60 ms não."
+    },
+    {
+      "o_que": "Borracha apaga o elemento inteiro, com um passo de histórico por arrasto",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › apagar com a borracha grava o passo; passar por cima do vazio não"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:315-321,452-459 e src/Ferramentas.vue:160, com o ícone do botão consertado (antes mostrava o nome do ícone)."
+    },
+    {
+      "o_que": "Arrastar um arquivo de imagem para o quadro",
+      "estado": "mantida",
+      "testes": ["test/lousa.spec.js › ponto de queda ausente ou inválido joga a imagem na origem"],
+      "evidencia": "O soltar chama o mesmo motor de antes, dentro do RoqueOS; hoje src/Lousa.vue:93,673-679. O teste cobre o motor com o ponto de queda; o evento de soltar na tela fica sem teste (antes: \"inserts a dropped image via the engine\", no spec do componente de antes, dentro do RoqueOS)."
+    },
+    {
+      "o_que": "Colar imagem da área de transferência, no centro, só com a janela ativa",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › desmontar solta o teclado, o painel de IA e os ouvintes do sistema"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:680-698,773. O teste só confere que o ouvinte de colar existe e sai ao fechar; colar de verdade e a regra da janela ativa ficam sem teste, como antes."
+    },
+    {
+      "o_que": "Imagem entra com no máximo 480 px de largura, centrada onde caiu; o que não é imagem é ignorado; a falha avisa",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › imagem larga encolhe para 480 mantendo a proporção; a de 480 entra igual",
+        "test/lousa.spec.js › ponto de queda ausente ou inválido joga a imagem na origem",
+        "test/lousa.spec.js › arquivo que não é imagem não vira elemento",
+        "test/lousa.spec.js › o anexo recusado não põe elemento no quadro, e avisa"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:556-589."
+    },
+    {
+      "o_que": "Onde fica a imagem colada, com conta",
+      "estado": "mudou",
+      "testes": [
+        "test/lousa.spec.js › com conta, a imagem vira anexo: o elemento guarda o id, e o quadro reaberto a desenha",
+        "test/lousa.spec.js › imagem acima do limite do anexo entra redesenhada menor, em vez de recusada",
+        "test/lousa.spec.js › anexo que sumiu deixa a imagem vazia, e o resto do quadro abre"
+      ],
+      "evidencia": "Decisão de desenho registrada em claude/goal28_sdk030_frente_e_anexos_2026-09-28.md (capacidade anexos do app-sdk; risco aceito: anexo órfão). Antes, dentro do RoqueOS, a imagem subia para o Finder da pessoa e o elemento guardava o endereço dela; hoje src/useLousa.js:565-572 guarda o id, e o anexo mora onde o sistema do RoqueOS guarda os anexos do app, pela capacidade anexos do contrato. Não medido com sessão real: guardar e ler o anexo só rodaram no sistema falso e no emulador.",
+      "nota": "Com conta, a imagem colada vira anexo do quadro, por id, e não arquivo em /Imagens: não aparece no Finder, não conta na cota de arquivos da pessoa, e renomear ou apagar no Finder não quebra mais o quadro. A imagem acima de 10 MB entra redesenhada menor em vez de recusada. Apagar a imagem, o quadro ou limpar tudo não apaga o anexo, que fica órfão, sem tela para removê-lo."
+    },
+    {
+      "o_que": "Imagem antiga, gravada por endereço, continua aparecendo",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › a imagem antiga, com endereço no elemento, continua desenhando pelo endereço"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:165-168 e src/Lousa.vue:188. O teste só chama srcDaImagem; nenhum teste abre um quadro gravado com imagem antiga."
+    },
+    {
+      "o_que": "Sem conta, ou no E2E, a imagem fica embutida no quadro",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › convidado: a imagem entra embutida, e nenhum anexo é guardado"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:565-566. O caminho do E2E não tem teste próprio."
+    },
+    {
+      "o_que": "Cor do traço: 7 amostras e cor livre",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Ferramentas.vue:22-44,142. Sem teste; não medido na tela."
+    },
+    {
+      "o_que": "Espessura do traço: 2, 4, 6 ou 8",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Ferramentas.vue:46-62,144. Sem teste; não medido na tela."
+    },
+    {
+      "o_que": "Preenchimento: liga e escolhe a cor",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Ferramentas.vue:85-95 e src/useLousa.js:287. O texto ao lado agora também liga o interruptor. Sem teste; não medido na tela."
+    },
+    {
+      "o_que": "Grade de pontos, ligada ao abrir, que acompanha pan e zoom",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › a grade começa ligada e o modo pan liga a bandeira enquanto arrasta"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Ferramentas.vue:96-99 e src/Lousa.vue:80,537-543. O teste confere só o valor inicial; desligar e acompanhar pan e zoom ficam sem teste."
+    },
+    {
+      "o_que": "Desfazer e refazer pelos botões, Ctrl/⌘+Z, Ctrl+Shift+Z e Ctrl+Y, até 60 passos",
+      "estado": "mantida",
+      "testes": [
+        "test/history.spec.js › push / undo / redo round-trips snapshots",
+        "test/history.spec.js › truncates the redo tail on a new push",
+        "test/history.spec.js › clones snapshots (no shared references)",
+        "test/history.spec.js › caps the stack length",
+        "test/lousa.spec.js › arrastar de verdade grava o passo",
+        "test/app.spec.js › abre na conta, com a barra no idioma, e o primeiro quadro nasce na conta"
+      ],
+      "evidencia": "src/history.js é o de antes (máximo de 60 na linha 5); antes, dentro do RoqueOS; hoje src/useLousa.js:251-268 e src/Lousa.vue:26-27,54-55,710-715. As teclas ficam sem teste; o teste do limite usa 4, não 60."
+    },
+    {
+      "o_que": "Excluir a seleção pelo botão, por Delete ou Backspace e pela folha",
+      "estado": "mantida",
+      "testes": ["test/lousa.spec.js › deleteSelection removes selected elements"],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:31-36,384-386,726-727 e src/useLousa.js:468-473. O botão desabilitado sem seleção e as teclas ficam sem teste."
+    },
+    {
+      "o_que": "Selecionar tudo com Ctrl/⌘+A; Esc limpa a seleção",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › copy / paste duplicates the selection with an offset",
+        "test/lousa.spec.js › deleteSelection removes selected elements"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:723-729 e src/useLousa.js:462-467. Os testes usam o selectAll do motor; as teclas ficam sem teste."
+    },
+    {
+      "o_que": "Copiar e colar dentro da Lousa (Ctrl/⌘+C e V), deslocado 24 px, com ids novos, também entre quadros",
+      "estado": "mantida",
+      "testes": ["test/lousa.spec.js › copy / paste duplicates the selection with an offset"],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:716-719 e src/useLousa.js:474-488. O teste confere o deslocamento; ids novos, colar em outro quadro e as teclas ficam sem teste. Não usa a área de transferência do sistema, nem antes."
+    },
+    {
+      "o_que": "Duplicar com Ctrl/⌘+D",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:720-722 e src/useLousa.js:489-492. Sem teste; não medido na tela."
+    },
+    {
+      "o_que": "Limpar tudo, sem confirmação, e dá para desfazer",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:37,387 e src/useLousa.js:628-632, que grava o passo no histórico. Sem teste; não medido na tela."
+    },
+    {
+      "o_que": "Atalhos de ferramenta V H P B L A R O T S E",
+      "estado": "mantida",
+      "testes": ["test/app.spec.js › o teclado só mexe na Lousa com a janela ativa"],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:731-744, a mesma tabela. O teste aperta só o R."
+    },
+    {
+      "o_que": "Teclado e colar não mexem na Lousa com a janela inativa ou com o foco num campo",
+      "estado": "mantida",
+      "testes": ["test/app.spec.js › o teclado só mexe na Lousa com a janela ativa"],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:681,702-704. O teste cobre a tecla com a janela inativa; o foco num campo e o colar com a janela inativa ficam sem teste."
+    },
+    {
+      "o_que": "Zoom de 20% em 20% pelos botões, de 10% a 800%, com o percentual na barra",
+      "estado": "mantida",
+      "testes": ["test/lousa.spec.js › zoom helpers stay within bounds"],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:525-530 e src/Lousa.vue:43-45. O percentual na barra fica sem teste."
+    },
+    {
+      "o_que": "Zoom pela roda ou pelo trackpad, ancorado no cursor",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:89,613-616 e src/useLousa.js:536-542, a mesma conta. Sem teste (antes o spec do componente de antes, dentro do RoqueOS, cobria a roda); não medido na tela."
+    },
+    {
+      "o_que": "Ajustar a vista ao conteúdo (Resetar Visualização); quadro vazio volta a 100%",
+      "estado": "mantida",
+      "testes": ["test/geometry.spec.js › contentBounds spans all elements with padding"],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:46,617-619 e src/useLousa.js:531-550. Só a conta dos limites tem teste; o ajuste no motor e o botão ficam sem teste."
+    },
+    {
+      "o_que": "Pinça com dois dedos faz zoom e pan; um dedo desenha; o menu de contexto não abre",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:90-95,621-670. Sem teste; não medido no aparelho."
+    },
+    {
+      "o_que": "Zoom e posição da vista gravados no quadro e restaurados ao abrir",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › com índice, abre o último quadro, e só ele é lido",
+        "test/quadros.spec.js › o quadro sem nome grava como Untitled, e a vista padrão vai junto"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:222,617-621. Restaurar tem teste; gravar a vista depois de um pan não."
+    },
+    {
+      "o_que": "O quadro se reajusta quando a janela muda de tamanho",
+      "estado": "mudou",
+      "evidencia": "Antes, dentro do RoqueOS, ouvia o redimensionar do navegador; hoje src/Lousa.vue:751-776 observa o palco com ResizeObserver. Sem teste; não medido na tela.",
+      "nota": "Antes só reagia quando o navegador mudava de tamanho; agora reage também quando a pessoa arrasta a borda da janela."
+    },
+    {
+      "o_que": "Salvamento automático 800 ms depois da última mudança, só com conta",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › o desenho vai para a conta depois do atraso",
+        "test/lousa.spec.js › convidado: o quadro fica na memória, e nada vai para a conta"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:57,198-237,413-418. Gravar ao fim do pan fica sem teste."
+    },
+    {
+      "o_que": "Quadro grande (900 KB): simplifica traços longos e avisa; se ainda não couber, avisa e não grava",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › quadro pequeno vai para a conta sem tocar em ponto nenhum",
+        "test/lousa.spec.js › quadro grande dizima só o traço longo, e avisa que simplificou",
+        "test/lousa.spec.js › quadro que nem dizimado cabe não é gravado, e avisa",
+        "test/quadros.spec.js › o tamanho é o do JSON em bytes UTF-8, e o que não vira JSON conta zero"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:224-249 e src/quadros.js:25."
+    },
+    {
+      "o_que": "Grava o que falta ao fechar a janela",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:834-839. Sem teste; não medido na tela."
+    },
+    {
+      "o_que": "Criar quadro pela barra, pela folha e pela lista de quadros, com aviso de quadro novo",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › criar, renomear, trocar e apagar quadros mantém o índice em dia",
+        "test/app.spec.js › abre na conta, com a barra no idioma, e o primeiro quadro nasce na conta"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:13,381, src/Quadros.vue:11-19,93-96 e src/useLousa.js:677-698. O motor e o aviso têm teste; o clique nos três botões não."
+    },
+    {
+      "o_que": "Lista de quadros com o atual destacado, para abrir outro",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › janela larga: a lateral com as ferramentas, e a folha dos quadros",
+        "test/lousa.spec.js › criar, renomear, trocar e apagar quadros mantém o índice em dia"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Quadros.vue:21-42,89-92 e src/useLousa.js:700-707. A troca tem teste no motor; o clique num item da lista não."
+    },
+    {
+      "o_que": "Renomear quadro: Enter ou sair do campo confirma; nome vazio é ignorado",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › criar, renomear, trocar e apagar quadros mantém o índice em dia"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Quadros.vue:30-39,97-109 e src/useLousa.js:709-715. Só o motor tem teste; o campo, o nome vazio e as teclas não. Ganhou foco automático no campo e Esc para cancelar."
+    },
+    {
+      "o_que": "Apagar quadro, com confirmação no próprio item; o último não se apaga",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › criar, renomear, trocar e apagar quadros mantém o índice em dia",
+        "test/lousa.spec.js › apagar o aberto quando o próximo não abre mostra a tela de erro, e o tentar de novo abre"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Quadros.vue:44-61,110-113 (botão desabilitado com um quadro só na linha 59) e src/useLousa.js:717-741. A confirmação e o botão desabilitado ficam sem teste. Apagar o quadro aberto não o grava mais de volta, defeito que existia antes."
+    },
+    {
+      "o_que": "Gerenciador de quadros",
+      "estado": "mudou",
+      "testes": [
+        "test/app.spec.js › janela larga: a lateral com as ferramentas, e a folha dos quadros"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, um modal centrado; hoje src/Quadros.vue:2-9, uma RosFolha do kit ui.",
+      "nota": "O gerenciador era um modal no centro da janela e agora é uma folha que sobe de baixo; o que se faz nele é o mesmo."
+    },
+    {
+      "o_que": "Reabre o último quadro; se ele sumiu, abre o primeiro; sem lista, cria um",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › sem índice, cria um quadro e grava o quadro e o índice",
+        "test/lousa.spec.js › com índice, abre o último quadro, e só ele é lido",
+        "test/lousa.spec.js › o último quadro que sumiu do índice cai no primeiro da lista"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:649-659."
+    },
+    {
+      "o_que": "Nome do quadro na barra, e título na barra estreita",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › abre na conta, com a barra no idioma, e o primeiro quadro nasce na conta"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:40,53. O teste confere o nome na barra larga; o título da barra estreita fica sem teste."
+    },
+    {
+      "o_que": "Falha de rede ao abrir a lista ou o quadro",
+      "estado": "mudou",
+      "testes": [
+        "test/lousa.spec.js › falha ao ler o índice mostra o erro e NÃO cria um quadro por cima da lista"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, engolia o erro e seguia em frente; hoje src/quadros.js:65-77 e src/useLousa.js:649-663.",
+      "nota": "Antes a falha era engolida: criava um quadro por cima da lista, ou abria vazio e a próxima gravação sobrescrevia o quadro. Agora mostra a tela de erro com Tentar novamente e não grava nada."
+    },
+    {
+      "o_que": "Falha de rede ao trocar de quadro, ou ao abrir o próximo depois de apagar o aberto",
+      "estado": "mudou",
+      "testes": [
+        "test/lousa.spec.js › trocar para um quadro que não abre deixa o aberto como estava, e nada grava por cima",
+        "test/lousa.spec.js › apagar o aberto quando o próximo não abre mostra a tela de erro, e o tentar de novo abre"
+      ],
+      "evidencia": "Consertado em 28/09. Antes, dentro do RoqueOS. Na v0.1.0 (src/useLousa.js:700-707) o defeito era outro: copiava o quadro anterior por cima do escolhido. Não medido na tela com a rede caindo.",
+      "nota": "Antes, o quadro escolhido abria vazio, \"Sem título\", sem aviso, e a edição seguinte o apagava. Hoje o quadro aberto fica como estava, com o aviso de que o escolhido não abriu, e nada grava por cima; apagar o aberto com o próximo fora do ar mostra a tela de erro com o tentar de novo."
+    },
+    {
+      "o_que": "Quadros e lista continuam no mesmo lugar da conta, sem migração",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › sem índice, cria um quadro e grava o quadro e o índice",
+        "test/lousa.spec.js › com índice, abre o último quadro, e só ele é lido"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje a conta vem do mesmo lugar de antes: o quadro e a lista ficam onde já ficavam, sem migração. Os testes do app usam o sistema falso; os caminhos têm teste próprio no RoqueOS, com mutantes que provam que confere os caminhos certos. Não medido com a conta real."
+    },
+    {
+      "o_que": "Documento do quadro com nome, elementos, vista e data de atualização",
+      "estado": "mantida",
+      "testes": [
+        "test/quadros.spec.js › o quadro sem nome grava como Untitled, e a vista padrão vai junto",
+        "test/quadros.spec.js › o id do quadro é o de sempre, e o do índice também",
+        "test/quadros.spec.js › limpar tira o traço em andamento e o campo undefined, e não mexe no resto",
+        "test/lousa.spec.js › com índice, abre o último quadro, e só ele é lido"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, gravava o documento inteiro de uma vez; hoje src/quadros.js:79-85 grava só os campos que mudaram, e a conta vem do mesmo lugar de antes, que mescla os campos enviados, com a data de atualização do sistema. Equivale porque o documento só tem esses campos. O único campo novo é o anexo no elemento de imagem: voltar o RoqueOS para a versão anterior deixa vazias as imagens coladas depois da saída."
+    },
+    {
+      "o_que": "Quadros com elementos antigos, no modelo novo ou no legado, abrem",
+      "estado": "mantida",
+      "testes": [
+        "test/elements.spec.js › migrateElement converts a legacy signed-bbox shape",
+        "test/elements.spec.js › migrateElement passes through a new-model element untouched"
+      ],
+      "evidencia": "src/elements.js:196-250, igual ao de antes, dentro do RoqueOS; aplicado ao abrir em src/useLousa.js:611-613 (antes, dentro do RoqueOS, também)."
+    },
+    {
+      "o_que": "Lista de quadros e último aberto gravados no mesmo índice, com merge",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › sem índice, cria um quadro e grava o quadro e o índice",
+        "test/lousa.spec.js › criar, renomear, trocar e apagar quadros mantém o índice em dia",
+        "test/quadros.spec.js › sem índice (ou sem conta), a lista é vazia, e o quadro que não existe é null"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/quadros.js:65-71,87-92, e a conta vem do mesmo lugar de antes."
+    },
+    {
+      "o_que": "Exportar PNG e PDF (2×, fundo branco, recortado no conteúdo; PDF de uma página)",
+      "estado": "mudou",
+      "testes": ["test/pdf.spec.js › builds a valid single-page PDF embedding a JPEG"],
+      "evidencia": "src/export.js e src/pdf.js iguais aos de antes, dentro do RoqueOS; antes, dentro do RoqueOS; hoje src/useLousa.js:747-783. O PNG não tem teste no repo; o QA do commit da saída exportou um PNG no dist em Chromium, WebKit e WebKit com perfil de iPhone. Baixar o anexo na exportação não foi medido com sessão real.",
+      "nota": "As imagens entram embutidas: antes a imagem da conta, por endereço, saía em branco no PNG e no PDF; agora sai. Em troca, exportar baixa cada anexo, e sem rede a imagem fica de fora."
+    },
+    {
+      "o_que": "Exportar SVG",
+      "estado": "mudou",
+      "testes": [
+        "test/lousa.spec.js › o SVG exportado leva a imagem do anexo embutida, e não o endereço local",
+        "test/serialize.spec.js › escapeXml escapes markup characters",
+        "test/serialize.spec.js › buildSvg wraps content in an SVG with a viewBox covering the bounds",
+        "test/serialize.spec.js › renders rotated elements inside a rotate group",
+        "test/serialize.spec.js › escapes text element content"
+      ],
+      "evidencia": "src/serialize.js igual ao de antes, dentro do RoqueOS; antes, dentro do RoqueOS; hoje src/useLousa.js:747-773.",
+      "nota": "A imagem vai embutida no SVG, e não mais o endereço dela; o arquivo fica maior."
+    },
+    {
+      "o_que": "O arquivo exportado leva o nome do quadro, saneado, com aviso de exportado e de erro",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › o SVG exportado leva a imagem do anexo embutida, e não o endereço local"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:768,778-781. O teste confere o nome (untitled.svg); o saneamento de caracteres e os avisos ficam sem teste."
+    },
+    {
+      "o_que": "Guardar o quadro como .rosboard: em Documentos com conta, baixado sem conta",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › guardar o quadro põe o .rosboard em Documentos, e conta o uso"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, subia o arquivo para os Documentos da pessoa; hoje src/Lousa.vue:15,383, src/useLousa.js:785-810 chamam o mesmo envio de arquivo do sistema do RoqueOS, para os Documentos. O download sem conta fica sem teste."
+    },
+    {
+      "o_que": "O .rosboard leva versão 2, nome e elementos, com as imagens",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › guardar o quadro põe o .rosboard em Documentos, e conta o uso",
+        "test/lousa.spec.js › o .rosboard leva a imagem dentro, e não o anexo, que quem recebe não abre"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, {version: 2, name, elements}, com a imagem da conta como o endereço dela nas Imagens. Consertado em 28/09 (veredicto): a imagem vai dentro, como data URL, e não o anexo (na v0.1.0 ia com src vazio). O formato é o mesmo. Abrir ou importar .rosboard não existe, nem antes nem depois."
+    },
+    {
+      "o_que": "Botão ✨ da IA na barra larga e na estreita; o mesmo botão abre e fecha o painel",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › o painel de IA é o do sistema, só de leitura, com as ações da Lousa no idioma"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:16-22,56-62,484-518. O teste usa a barra larga; o botão da barra estreita fica sem teste. O QA do commit da saída abriu e fechou o painel pelo mesmo botão no dist."
+    },
+    {
+      "o_que": "A IA lê o texto do quadro em ordem de leitura, sem poder alterá-lo",
+      "estado": "mantida",
+      "testes": [
+        "test/elements.spec.js › reads a wall of notes left to right, top to bottom",
+        "test/elements.spec.js › treats notes at slightly different heights as the same row",
+        "test/elements.spec.js › starts a new line when the gap is a real row apart",
+        "test/elements.spec.js › ignores shapes and strokes, which carry no words",
+        "test/elements.spec.js › returns empty for a board with nothing written on it",
+        "test/elements.spec.js › collapses the newlines a sticky note carries inside it",
+        "test/elements.spec.js › caps the output, because a full board can be enormous",
+        "test/elements.spec.js › reads text elements too, not just sticky notes",
+        "test/app.spec.js › o painel de IA é o do sistema, só de leitura, com as ações da Lousa no idioma"
+      ],
+      "evidencia": "src/elements.js:265-289, igual ao de antes, dentro do RoqueOS; entregue ao painel de IA do RoqueOS em src/Lousa.vue:492-493, com aplica: false, como antes."
+    },
+    {
+      "o_que": "Ações da IA: as de leitura do catálogo, mais Agrupar em temas e Extrair ações, com os mesmos prompts",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › o painel de IA é o do sistema, só de leitura, com as ações da Lousa no idioma"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:496-511, pela capacidade ia.abrirPainel do contrato do app-sdk, que abre o painel de IA do RoqueOS. O teste confere os ids das ações; os rótulos na tela não foram medidos, porque pedem servidor e agente."
+    },
+    {
+      "o_que": "Abrir Agentes, no painel da IA, fecha o painel e abre o app Agentes",
+      "estado": "mantida",
+      "evidencia": "Veredicto G4: o painel de IA do RoqueOS abre a janela do app Agentes e recarrega a lista de agentes toda vez que abre. Antes, dentro do RoqueOS, o mesmo comportamento. Conferido no código do RoqueOS; o clique não foi medido na tela."
+    },
+    {
+      "o_que": "Erro da IA vira aviso com o nome do app",
+      "estado": "mantida",
+      "evidencia": "Veredicto G4: consertado em 28/09 no RoqueOS, com o título de erro, como era antes de sair do núcleo; com teste próprio no RoqueOS. O resultado só é usado quando o agente termina bem. Antes, dentro do RoqueOS, o mesmo aviso. Não medido na tela com o agente fora do ar."
+    },
+    {
+      "o_que": "Tela de carregando, “Carregando quadro…”, com a barra que corre",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › abrindo os quadros, a barra do carregando corre; parada no perfil leve"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, o carregando padrão do sistema; hoje src/Lousa.vue:354-355 com o RosVazio carregando do kit ui (v0.5.0), parado no perfil leve (veredicto G11)."
+    },
+    {
+      "o_que": "Tela de erro com Tentar novamente",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › falha ao ler o índice mostra o erro e NÃO cria um quadro por cima da lista",
+        "test/lousa.spec.js › apagar o aberto quando o próximo não abre mostra a tela de erro, e o tentar de novo abre"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:356-366. Os testes cobrem o motor (o erro e a nova leitura); o botão na tela fica sem teste."
+    },
+    {
+      "o_que": "Sem conta, o quadro fica só na memória e nada é gravado",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › convidado: o quadro fica na memória, e nada vai para a conta",
+        "test/app.spec.js › sem conta, abre e desenha só na memória"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:97,638-648. O QA do commit da saída abriu a Lousa sem conta no dist."
+    },
+    {
+      "o_que": "Convidado que entra na conta com a Lousa aberta",
+      "estado": "mudou",
+      "testes": [
+        "test/lousa.spec.js › convidado que entra na conta leva o desenho: vira um quadro novo, com a imagem como anexo",
+        "test/lousa.spec.js › o desenho do convidado espera: se os quadros da conta não abrem, vai na próxima abertura",
+        "test/lousa.spec.js › o desenho do convidado não se perde se gravar o quadro novo falhar: vai na próxima",
+        "test/lousa.spec.js › quem sai da conta não leva o quadro da conta para o convidado",
+        "test/lousa.spec.js › os bytes da imagem embutida saem da data URL, com o tipo"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; consertado em 28/09 (veredicto), depois da v0.1.0, que recarregava os quadros da conta e sumia com o desenho (src/useLousa.js:826-832). Entrar na conta com a janela aberta não foi medido na tela.",
+      "nota": "Antes o desenho ficava na tela e ia para um documento local fora da lista, que nenhum aparelho abria de novo. Agora vira um quadro novo na lista da conta, com as imagens embutidas guardadas como anexo; se os quadros da conta não abrem ou gravar falha, o desenho espera a próxima abertura. Sair da conta não deixa o quadro da conta na tela do convidado."
+    },
+    {
+      "o_que": "O QA automático abre a Lousa com um quadro semeado, sem gravar na conta",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › no E2E, a semente do harness é o quadro, e nada vai para a conta"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:638-647. O QA do commit da saída e o print da doc usam essa semente."
+    },
+    {
+      "o_que": "A Lousa abre na conta de quem está logado",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › abre na conta, com a barra no idioma, e o primeiro quadro nasce na conta"
+      ],
+      "evidencia": "Veredicto: a conta vem do mesmo lugar de antes — antes, dentro do RoqueOS, e hoje pela capacidade identidade do contrato do app-sdk. O teste usa a identidade do sistema falso."
+    },
+    {
+      "o_que": "Modo celular: barra curta e folha com ações e ferramentas",
+      "estado": "mudou",
+      "testes": ["test/app.spec.js › janela estreita: a barra curta, e as ferramentas na folha"],
+      "evidencia": "Antes, dentro do RoqueOS, o viewport de celular trazia o cabeçalho do sistema e a folha de baixo do RoqueOS; hoje src/Lousa.vue:51-63,372-391,427,751-759 (janela com menos de 700 px, barra própria e RosFolha). Arrastar a alça para baixo fecha a folha, como na folha de baixo do RoqueOS (veredicto G7: kit ui v0.6.0, teste do kit test/componentes.spec.js › \"arrastar a alça para baixo fecha; o arraste curto volta a folha ao lugar\"). O QA do commit da saída viu a barra estreita e a folha no WebKit com perfil de iPhone. Não medido no aparelho, nem com o celular deitado ou no iPad; não conferido se o cabeçalho de celular do sistema tinha voltar ou fechar que a barra própria não tem.",
+      "nota": "Antes o modo celular vinha do viewport de celular, com o cabeçalho do sistema; agora vem da largura da janela (menos de 700 px), com barra própria (☰, título, desfazer, refazer, IA). Janela estreita na mesa também vira celular; celular deitado (cerca de 844 px) e iPad passam a ver a barra larga com a lateral de 248 px."
+    },
+    {
+      "o_que": "Zoom flutuante no celular",
+      "estado": "mantida",
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:336-351, que agora some enquanto a folha está aberta. Sem teste; não medido no aparelho."
+    },
+    {
+      "o_que": "Uma janela só da Lousa",
+      "estado": "mantida",
+      "evidencia": "Veredicto G1: o singleton: true do registro antigo nunca foi lido por nada; janela única é o padrão de como o RoqueOS abre janela, e só finder, browser, texteditor, roquecode e paint abrem várias. Conferido no código do RoqueOS; abrir a Lousa duas vezes não foi medido na tela."
+    },
+    {
+      "o_que": "Janela de 1200×800",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › o id e as capacidades são os do manifesto, e o manifesto é válido"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, na entrada do app no registro; hoje app.json:32-34, levado ao registro de apps do RoqueOS (veredicto G8). O mínimo de 400×300 é novo. O teste valida o manifesto; o tamanho da janela aberta não foi medido na tela."
+    },
+    {
+      "o_que": "Nome, descrição, ícone, cor, categoria e presença na Loja",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › o id e as capacidades são os do manifesto, e o manifesto é válido"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, na entrada do app no registro; hoje app.json:1-31, no registro de apps do RoqueOS com nome, ícone, cor, categoria, presença na Loja e descrição (veredicto G8). O QA do commit da saída abriu a Lousa pelo Spotlight no dist."
+    },
+    {
+      "o_que": "Dez idiomas, e a troca de idioma com a janela aberta",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › a troca de idioma com a janela aberta troca o texto",
+        "test/app.spec.js › abre na conta, com a barra no idioma, e o primeiro quadro nasce na conta"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje i18n/*.json, as mesmas 57 chaves nos 10 idiomas, e src/index.js:35-47. As 4 chaves que saíram não eram usadas. O QA do commit da saída trocou para en-US ao vivo no dist."
+    },
+    {
+      "o_que": "Avisos do app",
+      "estado": "mudou",
+      "testes": [
+        "test/lousa.spec.js › criar, renomear, trocar e apagar quadros mantém o índice em dia",
+        "test/lousa.spec.js › quadro grande dizima só o traço longo, e avisa que simplificou",
+        "test/lousa.spec.js › quadro que nem dizimado cabe não é gravado, e avisa",
+        "test/lousa.spec.js › o anexo recusado não põe elemento no quadro, e avisa"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, o nome do app no aviso vinha fixo em inglês (Whiteboard); os avisos duravam 2,5 s por padrão, 3 s e 4 s nos erros, 5 s no quadro grande demais. Hoje o sistema de avisos do RoqueOS usa o nome do registro do app, no idioma de quem usa (hotfix 2562, veredicto G3), e o padrão de 5000 ms do sistema de avisos (veredicto G2). Os testes conferem tipo e título; nome e duração ficam do lado do sistema do RoqueOS. O nome em produção foi medido no QR Code, nas Notas e no Xadrez, não na Lousa.",
+      "nota": "O aviso traz o nome do app no idioma de quem usa, e não mais “Whiteboard” fixo. Todos ficam 5 s, o padrão do sistema: antes eram 2,5 s a 4 s (o de quadro grande demais já era 5 s). Nenhum some antes da hora."
+    },
+    {
+      "o_que": "Guardar o quadro conta o uso (métrica save)",
+      "estado": "mantida",
+      "testes": [
+        "test/lousa.spec.js › guardar o quadro põe o .rosboard em Documentos, e conta o uso"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/useLousa.js:787 chama a métrica de uso do sistema do RoqueOS, como antes."
+    },
+    {
+      "o_que": "Perfil leve tira a malha e o desfoque",
+      "estado": "mudou",
+      "evidencia": "Antes, dentro do RoqueOS, um CSS que reagia na hora ao atributo do documento que marca o perfil leve; hoje src/lousa.scss:44-51 e src/index.js:31 leem a capacidade desempenho.modoLeve do contrato do app-sdk, uma vez, ao abrir (veredicto G5). A malha e o desfoque ficam sem teste; não medido na tela.",
+      "nota": "O visual leve continua, mas ligar ou desligar o perfil leve em Ajustes com a Lousa aberta só vale ao reabrir. O contrato do SDK não tem desempenho.aoMudar; reagir na hora pede capacidade nova, registrada para a 0.4.0."
+    },
+    {
+      "o_que": "Cor de destaque e tema",
+      "estado": "mudou",
+      "testes": [
+        "test/app.spec.js › o painel de IA é o do sistema, só de leitura, com as ações da Lousa no idioma"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, a cor de destaque vinha do sistema de cor de acento do app, e o fundo e o texto usavam as variáveis --ros-surface-0 e --ros-text do RoqueOS; hoje src/Lousa.vue:424-425 e src/lousa.scss:10-24, com #0ea5e9 fixo e as variáveis -rgb do contrato do SDK. O teste confere o acento fixo no painel de IA. Não medido no tema claro.",
+      "nota": "A cor de destaque virou fixa, #0ea5e9, em vez de vir do sistema de cor de acento do RoqueOS; fundo e texto seguem o tema pelas variáveis -rgb do contrato do SDK."
+    },
+    {
+      "o_que": "Pré-carga do app antes da primeira abertura",
+      "estado": "mantida",
+      "evidencia": "Veredicto G9: o pré-carregador de apps do RoqueOS ganhou a Lousa no commit da saída; antes, dentro do RoqueOS, o pré-carregador já trazia o Quadro Branco do mesmo jeito. A primeira abertura a frio numa rede lenta não foi medida."
+    },
+    {
+      "o_que": "Acessibilidade dos botões",
+      "estado": "mudou",
+      "testes": [
+        "test/app.spec.js › o teclado só mexe na Lousa com a janela ativa",
+        "test/app.spec.js › o painel de IA é o do sistema, só de leitura, com as ações da Lousa no idioma"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS, só title, com os botões do celular e do zoom flutuante sem nome; hoje aria-label e aria-pressed em src/Ferramentas.vue:13-14,35-36,55-56,86,97, e role=status em src/Lousa.vue:354 e src/Quadros.vue:35. A dica ao passar o mouse continua: o RosBotao do kit ui põe title igual ao rótulo (veredicto G10). Os testes acham os botões por aria-label e aria-pressed. Não medido com leitor de tela.",
+      "nota": "Ganho: ferramentas, cores, espessuras e interruptores ganharam aria-label e aria-pressed, e o carregando e o erro têm role=status. Desenhar só pelo teclado não existe, nem antes."
+    },
+    {
+      "o_que": "Fechar a janela solta teclado, colar e o painel de IA",
+      "estado": "mantida",
+      "testes": [
+        "test/app.spec.js › desmontar solta o teclado, o painel de IA e os ouvintes do sistema"
+      ],
+      "evidencia": "Antes, dentro do RoqueOS; hoje src/Lousa.vue:777-783 e src/useLousa.js:834-839."
+    }
+  ]
+}

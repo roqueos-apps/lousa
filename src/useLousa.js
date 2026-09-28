@@ -19,7 +19,7 @@
 // sempre foi. No E2E, idem: o harness semeia `window.__ROS_E2E__.whiteboard` com os elementos.
 
 import { ref, reactive, computed, onUnmounted } from 'vue'
-import { emModoE2E, estadoE2E } from '@roqueos-apps/app-sdk'
+import { emModoE2E, estadoE2E, TAMANHO_MAXIMO_DE_ANEXO } from '@roqueos-apps/app-sdk'
 import {
   createElement,
   pushFreehandPoint,
@@ -65,6 +65,51 @@ const TIPO_DO_AVISO = Object.freeze({
   error: 'erro',
 })
 
+/** Os bytes de uma data URL, sem esperar nada (a imagem embutida do convidado). */
+export function blobDaDataUrl(dataUrl) {
+  const [cabeca = '', corpo = ''] = String(dataUrl).split(',', 2)
+  const tipo = /^data:([^;,]+)/.exec(cabeca)?.[1] || 'application/octet-stream'
+  const binario = /;base64$/.test(cabeca) ? atob(corpo) : decodeURIComponent(corpo)
+  const bytes = new Uint8Array(binario.length)
+  for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i)
+  return new Blob([bytes], { type: tipo })
+}
+
+/**
+ * A imagem grande demais para um anexo, redesenhada menor. O lado maior desce até caber (JPEG
+ * sobre fundo branco, a cor do quadro); o elemento na tela já é de 480 de largura, então 4096
+ * ainda aguenta zoom de 8x sem perder nitidez. Rejeita se nem a menor couber.
+ * @param {Blob} arquivo
+ * @param {{ w: number, h: number }} dims
+ * @param {{ criarUrl: (b: Blob) => string, soltarUrl: (u: string) => void, limite: number }} x
+ */
+export async function reduzirNoCanvas(arquivo, dims, { criarUrl, soltarUrl, limite }) {
+  const url = criarUrl(arquivo)
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = () => reject(new Error('image decode failed'))
+      i.src = url
+    })
+    for (const lado of [4096, 2048, 1024]) {
+      const escala = Math.min(1, lado / Math.max(dims.w, dims.h))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(dims.w * escala))
+      canvas.height = Math.max(1, Math.round(dims.h * escala))
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      const menor = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9))
+      if (menor && menor.size <= limite) return menor
+    }
+    throw new Error('imagem grande demais mesmo reduzida')
+  } finally {
+    soltarUrl(url)
+  }
+}
+
 /** Um arquivo lido como data URL (a imagem do convidado, e a exportação). */
 export function lerComoDataUrl(arquivo) {
   return new Promise((resolve, reject) => {
@@ -81,14 +126,17 @@ export function lerComoDataUrl(arquivo) {
  *   t: (chave: string) => string,
  *   criarUrl?: (blob: Blob) => string,
  *   soltarUrl?: (url: string) => void,
- * }} opcoes `criarUrl` e `soltarUrl` são o `URL.createObjectURL`/`revokeObjectURL`; o teste
- *   troca.
+ *   reduzirImagem?: (arquivo: Blob, dims: { w: number, h: number }) => Promise<Blob>,
+ * }} opcoes `criarUrl` e `soltarUrl` são o `URL.createObjectURL`/`revokeObjectURL`, e
+ *   `reduzirImagem` redesenha a imagem que passa do limite do anexo; o teste troca os três.
  */
 export function useLousa({
   sistema,
   t,
   criarUrl = (blob) => URL.createObjectURL(blob),
   soltarUrl = (url) => URL.revokeObjectURL(url),
+  reduzirImagem = (arquivo, dims) =>
+    reduzirNoCanvas(arquivo, dims, { criarUrl, soltarUrl, limite: TAMANHO_MAXIMO_DE_ANEXO }),
 }) {
   const quadros = criarQuadros(sistema)
   const conta = ref(sistema.identidade.atual().uid)
@@ -129,6 +177,9 @@ export function useLousa({
   // O endereço mora só aqui, na memória desta janela, e sai no desmontar.
   const urlsDosAnexos = reactive({})
   const anexosPedidos = new Set()
+
+  // O desenho de quem estava sem conta e entrou com a Lousa aberta, até virar quadro da conta.
+  let desenhoDoConvidado = null
 
   // History
   const history = createBoardHistory()
@@ -565,8 +616,12 @@ export function useLousa({
       if (soNaMemoria()) {
         estilo = { src: await lerComoDataUrl(file) }
       } else {
-        const { id } = await sistema.anexos.guardar(file)
-        urlsDosAnexos[id] = criarUrl(file)
+        // O anexo vai até 10 MB. A imagem maior (um print de tela 4K, uma foto grande) entra
+        // redesenhada menor, em vez de ser recusada: dentro do RoqueOS ela ia inteira para as
+        // Imagens, e a pessoa não perdia a colagem.
+        const bytes = file.size > TAMANHO_MAXIMO_DE_ANEXO ? await reduzirImagem(file, dims) : file
+        const { id } = await sistema.anexos.guardar(bytes)
+        urlsDosAnexos[id] = criarUrl(bytes)
         anexosPedidos.add(id)
         estilo = { anexo: id }
       }
@@ -648,8 +703,10 @@ export function useLousa({
       }
       const index = await quadros.lerIndice()
       boards.value = index.boards
+      // O último aberto; se ele sumiu, ou se não há último (o apagado cuja troca falhou), o
+      // primeiro da lista. Quadro novo só quando a lista está vazia.
       let target = index.lastBoardId
-      if (target && !index.boards.some((b) => b.id === target)) target = index.boards[0]?.id || null
+      if (!index.boards.some((b) => b.id === target)) target = index.boards[0]?.id || null
       if (!target) {
         await createBoard(t('untitled'), { silent: true })
       } else {
@@ -657,6 +714,7 @@ export function useLousa({
         const data = await quadros.lerQuadro(target)
         applyBoardData(data || { name: t('untitled'), elements: [] })
       }
+      if (desenhoDoConvidado) await adotarDesenhoDoConvidado()
     } catch (e) {
       console.error('[lousa] abrir os quadros', e?.codigo ?? e)
       error.value = 'load'
@@ -697,13 +755,25 @@ export function useLousa({
     if (!silent) notify(t('notifyBoardCreatedTitle'), boardName.value)
   }
 
+  /** Abre outro quadro. Devolve se abriu; na falha, o quadro aberto fica como estava. */
   async function switchBoard(id) {
-    if (id === currentBoardId.value) return
+    if (id === currentBoardId.value) return true
     await flushSave()
+    let data
+    try {
+      data = await quadros.lerQuadro(id)
+    } catch (e) {
+      // Sem rede, o quadro aberto continua o mesmo, com o id dele. Trocar o id antes de ler (o
+      // que o Quadro Branco fazia) deixava na tela o quadro de antes com o id do escolhido, e a
+      // próxima gravação copiava um por cima do outro.
+      console.error('[lousa] abrir o quadro', e?.codigo ?? e)
+      notify(t('notifyOpenErrorTitle'), t('notifyOpenErrorMsg'), 'error')
+      return false
+    }
     currentBoardId.value = id
-    const data = await quadros.lerQuadro(id)
     applyBoardData(data || { name: t('untitled'), elements: [] })
     await persistIndex()
+    return true
   }
 
   async function renameBoard(id, name) {
@@ -734,8 +804,11 @@ export function useLousa({
     }
     if (eraOAberto) {
       const next = boards.value[0]?.id
-      if (next) await switchBoard(next)
-      else await createBoard(t('untitled'), { silent: true })
+      // O apagado saiu da tela; se o próximo não abrir, fica a tela de erro com o tentar de
+      // novo, e não o apagado sem id.
+      if (next) {
+        if (!(await switchBoard(next))) error.value = 'load'
+      } else await createBoard(t('untitled'), { silent: true })
     }
     await persistIndex()
   }
@@ -787,10 +860,18 @@ export function useLousa({
     sistema.metricas.evento('save')
     try {
       const nome = `${(boardName.value || 'whiteboard').replace(/[^\w-]+/g, '_')}.rosboard`
+      // As imagens vão dentro do arquivo: o anexo é da conta de quem guardou, e quem recebe o
+      // .rosboard não o abre. Dentro do RoqueOS ia o endereço público da imagem.
+      const elementos = (await elementosParaExportar()).map((el) => {
+        if (el.type !== 'image' || !el.anexo || !el.src) return el
+        const semAnexo = { ...el }
+        delete semAnexo.anexo
+        return semAnexo
+      })
       const conteudo = JSON.stringify({
         version: 2,
         name: boardName.value,
-        elements: limparElementos(elements.value),
+        elements: limparElementos(elementos),
       })
       if (soNaMemoria()) {
         downloadBlob(new Blob([conteudo], { type: 'application/json' }), nome)
@@ -820,6 +901,47 @@ export function useLousa({
   history.push([])
   syncHistory()
 
+  // --- O desenho do convidado ------------------------------------------------------
+  // Quem desenhou sem conta e entrou com a Lousa aberta não perde o desenho: ele vira um quadro
+  // novo da conta, depois dos que já estavam lá, e é o que fica aberto. As imagens embutidas
+  // viram anexo (embutidas, estourariam o quadro). Se os quadros da conta não abrirem, o
+  // desenho espera a próxima abertura que der certo.
+  async function adotarDesenhoDoConvidado() {
+    const desenho = desenhoDoConvidado
+    desenhoDoConvidado = null
+    try {
+      await guardarNaConta(desenho)
+    } catch (e) {
+      desenhoDoConvidado = desenho
+      throw e
+    }
+  }
+
+  async function guardarNaConta(desenho) {
+    const elementos = await Promise.all(
+      desenho.map(async (el) => {
+        if (el.type !== 'image' || el.anexo || !/^data:/.test(el.src || '')) return el
+        try {
+          const bytes = blobDaDataUrl(el.src)
+          const { id } = await sistema.anexos.guardar(bytes)
+          urlsDosAnexos[id] = criarUrl(bytes)
+          anexosPedidos.add(id)
+          return { ...el, src: '', anexo: id }
+        } catch (e) {
+          console.error('[lousa] a imagem do convidado', e?.codigo ?? e)
+          return el
+        }
+      }),
+    )
+    await createBoard(t('untitled'), { silent: true })
+    elements.value = elementos
+    history.reset()
+    history.push(elements.value)
+    syncHistory()
+    await flushSave()
+    notify(t('notifyGuestSavedTitle'), t('notifyGuestSavedMsg'))
+  }
+
   // --- Lifecycle ---------------------------------------------------------------
   // A conta trocou com a Lousa aberta: o que esperava para gravar era da conta anterior e não
   // vai para a nova; os quadros da conta nova abrem.
@@ -827,6 +949,13 @@ export function useLousa({
     if (novo === conta.value) return
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = null
+    if (!conta.value && novo && !emModoE2E() && elements.value.length) {
+      desenhoDoConvidado = limparElementos(elements.value)
+    }
+    // O quadro aberto era da conta de antes (ou o `local` do convidado): até o da conta nova
+    // abrir, não há quadro para gravar. Sem isto, criar o primeiro quadro da conta nova gravava
+    // antes o de antes nela, com o id dele.
+    currentBoardId.value = null
     conta.value = novo
     loadBoards()
   })

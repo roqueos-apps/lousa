@@ -352,7 +352,14 @@
 
         <!-- Abrindo, ou a falha de abrir -->
         <div v-if="loading || error" class="lousa__sobre" role="status">
-          <RosVazio v-if="loading" icone="draw" :acento="ACENTO" :titulo="t('loadingTitle')" />
+          <RosVazio
+            v-if="loading"
+            icone="draw"
+            :acento="ACENTO"
+            :titulo="t('loadingTitle')"
+            carregando
+            :leve="estado.leve"
+          />
           <RosVazio
             v-else
             icone="draw"

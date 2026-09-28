@@ -60,6 +60,31 @@ describe('a Lousa pelo app-sdk', () => {
     f.montagem.desmontar()
   })
 
+  it('abrindo os quadros, a barra do carregando corre; parada no perfil leve', async () => {
+    // O Quadro Branco de antes abria com o `ROSAppLoader state="loading"`, que tem a barra.
+    for (const modoLeve of [false, true]) {
+      const falso = criarSistemaFalso({
+        appId: 'whiteboard',
+        identidade: ANA,
+        colecoes: ['quadros', 'indice'],
+        modoLeve,
+      })
+      const abrir = falso.sistema.colecoes.abrir
+      // A conta ainda não respondeu: o índice nunca chega.
+      falso.sistema.colecoes.abrir = (nome) => ({
+        ...abrir(nome),
+        ler: () => new Promise(() => {}),
+      })
+      const el = document.createElement('div')
+      document.body.appendChild(el)
+      const montagem = lousa.mount(el, falso.sistema, { windowId: 'w1', ativo: true })
+      await vi.waitFor(() => expect(el.querySelector('.rui-vazio__barra')).not.toBeNull())
+      expect(el.textContent).toContain('Carregando quadro…')
+      expect(Boolean(el.querySelector('.rui-vazio__barra--parada'))).toBe(modoLeve)
+      montagem.desmontar()
+    }
+  })
+
   it('a troca de idioma com a janela aberta troca o texto', async () => {
     const f = montar()
     await abriu(f.el)
