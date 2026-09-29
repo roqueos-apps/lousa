@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@roqueos-apps/app-sdk": "github:roqueos-apps/app-sdk#v0.3.0",
-    "@roqueos-apps/ui": "git+ssh://git@github.com/roqueos-apps/ui.git#v0.6.0"
+    "@roqueos-apps/ui": "github:roqueos-apps/ui#v0.6.0"
   },
   "peerDependencies": {
     "vue": "^3.5.0"

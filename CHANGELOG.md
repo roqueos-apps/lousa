@@ -3,6 +3,14 @@
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e o projeto
 usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Mudado
+
+- O kit de interface (`@roqueos-apps/ui`) entra por HTTPS (`github:roqueos-apps/ui#v0.6.0`), no
+  mesmo commit de antes (`d2a66cb`). Pelo `git+ssh` o GitHub Actions não instalava sem chave,
+  nem com o repo aberto (medido em 29/09 no `verificar`: `Permission denied (publickey)`).
+
 ## [0.1.3] - 2026-09-28
 
 ### Adicionado
