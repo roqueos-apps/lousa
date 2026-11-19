@@ -5,6 +5,14 @@ usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Adicionado
+
+- A documentação no padrão da família: o conjunto em `docs/` (inglês, o principal) com o par em
+  `docs/pt-BR/`, declarado em `docs/docs.json` e medido pelo `roqueos-docs`. O README e o
+  CONTRIBUTING passam a ser em inglês, com `README.pt-BR.md` e `docs/pt-BR/CONTRIBUTING.md`. O
+  README dizia que a dizimação tira três de cada quatro pontos; o código guarda metade, e é o
+  que os documentos dizem agora.
+
 ### Mudado
 
 - O kit de interface (`@roqueos-apps/ui`) entra por HTTPS (`github:roqueos-apps/ui#v0.6.0`), no
