@@ -3,6 +3,8 @@
 App da organização roqueos-apps, montado pelo RoqueOS através do `app-sdk`. Leia o README
 antes de mudar qualquer coisa.
 
+- Documentação: comece por `docs/INDEX.md` (inglês, principal; o par em pt-BR em `docs/pt-BR/`).
+  Mudou comportamento, muda o documento do papel certo nos dois idiomas no mesmo commit.
 - Gate: `yarn verificar` (o mesmo do CI e do pre-push).
 - O app só importa `vue`, `@roqueos-apps/app-sdk`, `@roqueos-apps/ui` e arquivo deste repo. O
   `app check` e a catraca `apps-fora-do-nucleo` do RoqueOS reprovam o resto.
